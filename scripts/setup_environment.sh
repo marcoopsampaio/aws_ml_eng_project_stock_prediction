@@ -44,4 +44,5 @@ echo "Installing dependencies..."
 poetry install
 
 # Activate pre-commit hooks
+chmod +x .githooks/check-version.sh
 poetry run pre-commit install
