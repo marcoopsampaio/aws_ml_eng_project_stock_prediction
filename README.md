@@ -1,5 +1,6 @@
 # AWS ML engineering Capstone Project - Stock Prediction
 
+
 ### Setup Environment
 
  Install the environment
@@ -11,4 +12,3 @@ Activate the environment
 ```bash
 poetry shell
 ```
-
