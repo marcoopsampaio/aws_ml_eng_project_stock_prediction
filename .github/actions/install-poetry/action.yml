@@ -1,0 +1,11 @@
+name: 'Install Poetry'
+description: 'Install Poetry'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Poetry
+      shell: bash
+      run: |
+        pip install --upgrade pip
+        pip install poetry==$(cat .poetry-version)
