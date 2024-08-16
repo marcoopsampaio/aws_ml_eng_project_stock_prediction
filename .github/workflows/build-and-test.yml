@@ -1,0 +1,137 @@
+# Reference:
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Build & Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.10.14"
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main')
+      || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    outputs:
+      package_version: ${{ steps.get-package-version.outputs.package_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Poetry
+        uses: ./.github/actions/install-poetry
+      - name: Get the Package Version
+        id: get-package-version
+        run: |
+          VERSION_ARRAY=(`poetry version`)
+          PACKAGE_VERSION=${VERSION_ARRAY[1]}
+          echo "::set-output name=package_version::${PACKAGE_VERSION}"
+          echo "PACKAGE_VERSION=${PACKAGE_VERSION}"
+      - name: Check version has been bumped
+        run: |
+          git fetch -tq
+          ALL_TAGS=(`git tag -l`)
+          if [[ "${ALL_TAGS[*]}" =~ "v${{ steps.get-package-version.outputs.package_version }}" ]]
+          then
+            echo "Please bump version prior to merge"
+            exit 1
+          fi
+          echo "Version good to go"
+
+  calc-branch-name:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.get-branch-name.outputs.branch_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: get-branch-name
+        id: get-branch-name
+        run: |
+          BRANCH_NAME=${{github.head_ref}} # for pull requests
+          BRANCH_NAME=${BRANCH_NAME:=${GITHUB_REF#refs/heads/}} # for pushes or merges
+          echo "::set-output name=branch_name::${BRANCH_NAME}"
+          echo "BRANCH_NAME = ${BRANCH_NAME}"  tests:
+
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task: ['unit tests', 'imports sorting', 'linting', 'formatting', 'type checking', 'poetry.lock freshness']
+        include:
+          - task: 'unit tests'
+            needs_python: true
+            coverage_report: coverage.xml
+            coverage_report_name: pytest_coverage.xml
+            run: |
+              poetry install
+              poetry run pytest -v --cov-report=xml tests/unit
+          - task: 'imports sorting'
+            needs_python: true
+            run: |
+              poetry run isort --check .
+          - task: 'linting'
+            needs_python: true
+            run: |
+              poetry run flake8 .
+          - task: 'formatting'
+            needs_python: true
+            run: |
+              poetry run black --check .
+          - task: 'type checking'
+            needs_python: true
+            run: |
+              poetry run mypy .
+          - task: 'poetry.lock freshness'
+            needs_python: true
+            run: |
+              poetry lock --check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        if: ${{ matrix.needs_python }}
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Poetry
+        uses: ./.github/actions/install-poetry
+      - name: Cache poetry
+        if: ${{ matrix.needs_python }}
+        uses: actions/cache@v4
+        with:
+          # This path is specific to Ubuntu
+          path: ~/.cache/pypoetry
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-
+      - name: ${{ matrix.task }}
+        run: |
+          poetry install
+          ${{ matrix.run }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.coverage_report }}
+        with:
+          name: ${{ matrix.coverage_report_name }}
+          path: ${{ matrix.coverage_report }}
+
+  set-github-release:
+    runs-on: ubuntu-latest
+    if: needs.calc-branch-name.outputs.branch_name == 'main'
+    needs:
+      - calc-branch-name
+      - check-version
+    steps:
+      - name: 'Create Release'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.check-version.outputs.package_version }}
+          release_name: Release v${{ needs.check-version.outputs.package_version }}
