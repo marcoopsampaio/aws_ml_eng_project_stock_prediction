@@ -1,1 +1,1 @@
-# neurips_ariel_data_challenge_2024
+# AWS ML engineering Capstone Project - Stock Prediction
