@@ -3,7 +3,7 @@
 
 def dummy_function():
     """
-    Returns a dummy string.
+    Returns a dummy string
     """
     return "Hello, World!"
 
