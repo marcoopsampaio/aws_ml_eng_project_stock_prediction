@@ -1,6 +1,9 @@
 import pandas as pd
 
 from stock_prediction.commons import REPO_ROOT
+from stock_prediction.helpers.logging.log_config import get_logger
+
+logger = get_logger()
 
 PRICE_DATA_KEY = "price_date"
 ETFS_DIR_PATH = REPO_ROOT / "data/raw_data/securities/etfs_and_mutual_funds_kaggle/"
@@ -18,7 +21,8 @@ def load_etfs_data():
     df_etfs : pd.DataFrame
         ETFs data
     """
-    print("Loading ETFs data ...")
+
+    logger.info("Loading ETFs data ...")
 
     if not ETFS_DIR_PATH.exists():
         raise FileNotFoundError(
@@ -32,4 +36,6 @@ def load_etfs_data():
         lambda x: pd.Timestamp(x)
     )
     df_etfs = pd.read_csv(ETFS_DIR_PATH.joinpath("ETFs.csv"))
+
+    logger.info("ETFs data loaded.")
     return df_etf_prices, df_etfs
