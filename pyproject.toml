@@ -19,6 +19,7 @@ pandas = "*"
 matplotlib = "*"
 scikit-learn = "*"
 quantstats = "*"
+statsmodels = "^0.14.2"
 
 [tool.poetry.dev-dependencies]
 isort = "*"
