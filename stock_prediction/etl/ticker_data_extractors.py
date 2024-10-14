@@ -35,5 +35,22 @@ def extract_ticker_data(
     return df_all_symbols
 
 
+def load_cleaned_dataset():
+    df_all_symbols = pd.read_csv(DEFAULT_DATA_EXTRACTION_OUTPUT_PATH)
+    df_all_symbols["Date"] = df_all_symbols["Date"].apply(lambda x: pd.Timestamp(x))
+    df_all_symbols = df_all_symbols.set_index("Date")
+    first_index = df_all_symbols.isna().sum()
+
+    df_all_symbols_clipped = df_all_symbols[
+        df_all_symbols.index >= df_all_symbols.index[first_index].max()
+    ]
+
+    cols_final = [
+        col for col in df_all_symbols.columns if col not in ["RGI", "RYH", "RYT"]
+    ]
+
+    return df_all_symbols_clipped[cols_final]
+
+
 if __name__ == "__main__":
     extract_ticker_data()
