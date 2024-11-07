@@ -52,5 +52,15 @@ def load_cleaned_dataset():
     return df_all_symbols_clipped[cols_final]
 
 
+def train_test_split(test_fraction: float = 0.4):
+    df = load_cleaned_dataset()
+    n_samples_train = int(df.shape[0] * (1 - test_fraction))
+    n_samples_test = int(df.shape[0] * test_fraction)
+    df_train = df.sort_index(ascending=True).head(n_samples_train)
+    df_test = df.sort_index(ascending=True).tail(n_samples_test)
+
+    return df_train, df_test
+
+
 if __name__ == "__main__":
     extract_ticker_data()

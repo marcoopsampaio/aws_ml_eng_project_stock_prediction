@@ -14,7 +14,7 @@ class ForecastModel(ABC):
         pass
 
     @abstractmethod
-    def fit(self, df_train: pd.DataFrame, **kwargs):
+    def fit(self, df: pd.DataFrame, **kwargs):
         pass
 
     @abstractmethod

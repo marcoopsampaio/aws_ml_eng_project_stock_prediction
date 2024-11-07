@@ -26,9 +26,9 @@ def get_normalized_nsteps_ahead_predictions_array(
         A 3D array of normalized predictions with shape (index_end - index_start + 1, df.shape[1], n_steps_ahead).
 
     """
-    predictions = np.zeros((index_end - index_start + 1, df.shape[1], n_steps_ahead))
+    predictions = np.zeros((index_end - index_start, df.shape[1], n_steps_ahead))
 
-    for i in range(index_start, index_end + 1):
+    for i in range(index_start, index_end):
         predictions[i - index_start, :, :] = n_steps_ahead_normalized_slice_df(
             df, n_steps_ahead, i
         ).T.to_numpy()
