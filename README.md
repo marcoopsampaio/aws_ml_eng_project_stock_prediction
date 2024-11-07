@@ -12,3 +12,9 @@ Activate the environment
 ```bash
 poetry shell
 ```
+
+## How to reproduce this work
+
+### Step 1: Data Exploration
+
+### Step 2: Preprocessing

@@ -8,7 +8,7 @@ profile = "black"
 
 [tool.poetry]
 name = "stock_prediction"
-version = "0.1.2"
+version = "0.1.3"
 description = ""
 authors = ["Marco Sampaio <marcoopsampaio@gmail.com>"]
 readme = "README.md"
@@ -18,11 +18,15 @@ python = ">=3.10"
 pandas = "*"
 matplotlib = "*"
 scikit-learn = "*"
+quantstats = "*"
+statsmodels = "^0.14.2"
+statsforecast = "^1.7.8"
+lightgbm = "^4.5.0"
 
 [tool.poetry.dev-dependencies]
 isort = "*"
 ipython = "^8.10.0"
-pytest = "^6.0"
+pytest = "*"
 pytest-cov = "*"
 pytest-env = "*"
 black = {version = "^22.10.0", extras = ["jupyter", "d"]}
