@@ -121,11 +121,17 @@ class UnivariateLightGBMs(ForecastModel):
         for symbol in df.columns:
             print(f"Training {symbol}...")
             # Preprocess and split the data
-            df_train = self.preprocess(df[symbol])
+            df_all = self.preprocess(df[symbol])
             df_valid = None
+
             if valid_range is not None:
-                df_train = df_train.iloc[: valid_range[0]]
-                df_valid = df_train.iloc[valid_range[0] : valid_range[1]]
+                df_train = df_all[df_all[self.INITIAL_INDEX_COL] < valid_range[0]]
+                df_valid = df_all[
+                    (df_all[self.INITIAL_INDEX_COL] >= valid_range[0])
+                    & (df_all[self.INITIAL_INDEX_COL] < valid_range[1])
+                ]
+            else:
+                df_train = df_all
 
             # Initialize and fit the model
             lgbm_model = LGBMRegressor(**self.lgbm_hpts)
@@ -143,6 +149,22 @@ class UnivariateLightGBMs(ForecastModel):
             )
             self.models[symbol] = lgbm_model
 
+    def _get_dict_all_features_dfs(
+        self,
+        df: pd.DataFrame,
+        index_start: Optional[int] = None,
+        index_end: Optional[int] = None,
+    ):
+        dict_all_features_dfs: dict[str, pd.DataFrame] = dict()
+        for symbol in df.columns:
+            df_features = self.preprocess(df[symbol])
+            df_features = df_features[
+                df_features[self.INITIAL_INDEX_COL].between(index_start, index_end)
+            ].drop(columns=[self.LABEL_COL])
+            dict_all_features_dfs[symbol] = df_features
+
+        return dict_all_features_dfs
+
     def predict(
         self,
         df_predict: pd.DataFrame,
@@ -151,6 +173,7 @@ class UnivariateLightGBMs(ForecastModel):
         index_end: Optional[int] = None,
         **kwargs,
     ):
+
         if n_steps_predict > self.n_steps_predict:
             raise ValueError(
                 "n_steps_predict cannot be greater than the "
@@ -166,19 +189,15 @@ class UnivariateLightGBMs(ForecastModel):
             (index_end - index_start, df_predict.shape[1], n_steps_predict)
         )
 
+        dict_all_features_dfs = self._get_dict_all_features_dfs(
+            df_predict, index_start, index_end
+        )
+
         for i, symbol in enumerate(df_predict.columns):
-            df_predict_preprocessed = self.preprocess(df_predict[symbol])
-            df_predict_preprocessed = df_predict_preprocessed[
-                df_predict_preprocessed[self.INITIAL_INDEX_COL].between(
-                    index_start, index_end
-                )
-            ]
             predictions_lgbm = self.models[symbol].predict(
-                df_predict_preprocessed.drop(
-                    [self.LABEL_COL, self.INITIAL_INDEX_COL], axis=1
-                )
+                dict_all_features_dfs[symbol].drop([self.INITIAL_INDEX_COL], axis=1)
             )
-            df_preds = df_predict_preprocessed[
+            df_preds = dict_all_features_dfs[symbol][
                 [self.INITIAL_INDEX_COL, self.N_FORECAST_COL]
             ].copy()
             df_preds[self.PREDICTION_COL] = predictions_lgbm
@@ -202,3 +221,103 @@ class UnivariateLightGBMs(ForecastModel):
             )
 
         return predictions
+
+
+class MultivariateLightGBM(UnivariateLightGBMs):
+    def preprocess(self, df: pd.DataFrame):
+        df_all_features = None
+        df_all_labels: dict[str, pd.DataFrame] = dict()
+        for symbol in df.columns:
+            # Preprocess and split the data
+            df_symbol = super().preprocess(df[symbol])
+
+            per_symbol_feature_columns = [
+                col
+                for col in df_symbol.columns
+                if col
+                not in [self.LABEL_COL, self.INITIAL_INDEX_COL, self.N_FORECAST_COL]
+            ]
+            column_renames = {
+                feature: f"{feature}_{symbol}" for feature in per_symbol_feature_columns
+            }
+
+            df_symbol = df_symbol.rename(columns=column_renames)
+
+            if df_all_features is None:
+                df_all_features = df_symbol.drop(columns=[self.LABEL_COL])
+            else:
+                df_all_features = df_all_features.merge(
+                    df_symbol.drop(columns=[self.LABEL_COL]),
+                    on=[
+                        self.INITIAL_INDEX_COL,
+                        self.N_FORECAST_COL,
+                    ],
+                    how="inner",
+                )
+
+            df_all_labels[symbol] = df_symbol[
+                [self.LABEL_COL, self.INITIAL_INDEX_COL, self.N_FORECAST_COL]
+            ]
+
+        return df_all_features, df_all_labels
+
+    def fit(
+        self, df: pd.DataFrame, valid_range: Optional[tuple[int, int]] = None, **kwargs
+    ):
+        # Make shared features dataset
+        df_all_features, df_all_labels = self.preprocess(df)
+        all_labels_train: dict[str, pd.DataFrame] = dict()
+        all_labels_valid: dict[str, pd.DataFrame] = dict()
+        df_train_all = df_all_features
+        df_valid_all = None
+        if valid_range is not None:
+            for symbol in df.columns:
+                all_labels_train[symbol] = df_all_labels[symbol][
+                    df_all_labels[symbol][self.INITIAL_INDEX_COL] < valid_range[0]
+                ]
+                all_labels_valid[symbol] = df_all_labels[symbol][
+                    (df_all_labels[symbol][self.INITIAL_INDEX_COL] >= valid_range[0])
+                    & (df_all_labels[symbol][self.INITIAL_INDEX_COL] < valid_range[1])
+                ]
+
+            df_train_all = df_all_features[
+                df_all_features[self.INITIAL_INDEX_COL] < valid_range[0]
+            ]
+            df_valid_all = df_all_features[
+                (df_all_features[self.INITIAL_INDEX_COL] >= valid_range[0])
+                & (df_all_features[self.INITIAL_INDEX_COL] < valid_range[1])
+            ]
+
+        for symbol in df.columns:
+            logger.info(f"Training {symbol}...")
+            lgbm_model = LGBMRegressor(**self.lgbm_hpts)
+            lgbm_model.fit(
+                df_train_all.drop([self.INITIAL_INDEX_COL], axis=1),
+                all_labels_train[symbol][self.LABEL_COL],
+                eval_set=[
+                    (
+                        df_valid_all.drop([self.INITIAL_INDEX_COL], axis=1),
+                        all_labels_valid[symbol][self.LABEL_COL],
+                    )
+                ]
+                if df_valid_all is not None
+                else None,
+            )
+            self.models[symbol] = lgbm_model
+
+    def _get_dict_all_features_dfs(
+        self,
+        df: pd.DataFrame,
+        index_start: Optional[int] = None,
+        index_end: Optional[int] = None,
+    ):
+        df_all_features, _ = self.preprocess(df)
+        df_all_features = df_all_features[
+            df_all_features[self.INITIAL_INDEX_COL].between(index_start, index_end)
+        ]
+        dict_all_features_dfs: dict[str, pd.DataFrame] = dict()
+
+        for symbol in df.columns:
+            dict_all_features_dfs[symbol] = df_all_features
+
+        return dict_all_features_dfs

@@ -29,6 +29,14 @@ def summary_analysis(
         plt.legend([f"Prediction (n = {pos})", "Actual"])
         plt.show()
 
+        plt.figure(figsize=figsize)
+        plt.plot(predictions[:, symbol_pos, pos] - 1)
+        plt.plot(actuals[:, symbol_pos, pos] - 1)
+        plt.ylabel("Return at n")
+        plt.xlabel("Date")
+        plt.legend([f"Prediction (n = {pos})", "Actual"])
+        plt.show()
+
     # Get the prediction errors
     df_pred_errors = pd.DataFrame(
         np.mean(np.abs(actuals - predictions) / actuals, axis=2),
