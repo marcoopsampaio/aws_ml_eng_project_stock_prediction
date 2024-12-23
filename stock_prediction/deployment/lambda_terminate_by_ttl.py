@@ -1,0 +1,35 @@
+# terminate_expired_instances_lambda.py
+
+from datetime import datetime, timezone
+
+import boto3
+
+REGION = "us-east-1"
+
+ec2_client = boto3.client("ec2", region_name=REGION)
+
+
+def lambda_handler(event, context):
+    now = datetime.now(timezone.utc)
+
+    # List all running EC2 instances with the "ShutdownBy" tag
+    instances = ec2_client.describe_instances(
+        Filters=[
+            {"Name": "instance-state-name", "Values": ["running"]},
+            {"Name": "tag:ShutdownBy", "Values": ["*"]},
+        ]
+    )
+
+    for reservation in instances["Reservations"]:
+        for instance in reservation["Instances"]:
+            shutdown_by = next(
+                (
+                    tag["Value"]
+                    for tag in instance.get("Tags", [])
+                    if tag["Key"] == "ShutdownBy"
+                ),
+                None,
+            )
+            if shutdown_by and datetime.fromisoformat(shutdown_by) < now:
+                ec2_client.terminate_instances(InstanceIds=[instance["InstanceId"]])
+                print(f"Terminated instance {instance['InstanceId']}")
