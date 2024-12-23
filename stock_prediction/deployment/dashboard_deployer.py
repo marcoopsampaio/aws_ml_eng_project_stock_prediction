@@ -519,12 +519,9 @@ def delete_resources(ec2_resource, autoscaling_client, elb_client):
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="AWS EC2 deployment or cleanup")
+    parser = argparse.ArgumentParser(description="Deploy or clean up the deployment.")
     parser.add_argument(
-        "--mode",
-        choices=["deploy", "cleanup"],
-        default="deploy",
-        help="Mode of operation (run or cleanup resources)",
+        "--cleanup", action="store_true", help="Cleanup the deployment resources"
     )
     args = parser.parse_args()
 
@@ -533,7 +530,9 @@ def main():
     autoscaling_client = boto3.client("autoscaling")
     elb_client = boto3.client("elbv2")
 
-    if args.mode == "deploy":
+    if args.cleanup:
+        delete_resources(ec2_resource, autoscaling_client, elb_client)
+    else:
         # Create a Security Group
         security_group_id = create_security_group(ec2_resource)
         # Get_public_subnets
@@ -542,8 +541,6 @@ def main():
         deploy_with_autoscaling(
             autoscaling_client, elb_client, security_group_id, subnet_ids
         )
-    elif args.mode == "cleanup":
-        delete_resources(ec2_resource, autoscaling_client, elb_client)
 
 
 if __name__ == "__main__":

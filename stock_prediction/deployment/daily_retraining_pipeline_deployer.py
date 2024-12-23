@@ -1,19 +1,18 @@
 import argparse
 import json
 import os
+import time
 import zipfile
-from datetime import datetime
 
 import boto3
 from botocore.exceptions import ClientError
-from dateutil import tz
 
 # TODO: refactor names repeated by hand
 
 # AWS Configuration
 REGION = "us-east-1"
 LAMBDA_ROLE_NAME = "LambdaExecutionRoleForEC2"
-TTL_DURATION = 6 * 3600  # TTL in seconds (e.g., 1 hour)
+TTL_DURATION = 6 * 3600  # TTL in seconds (e.g., 6 hour)
 
 # Initialize clients
 iam_client = boto3.client("iam", region_name=REGION)
@@ -84,6 +83,12 @@ def create_lambda_execution_role():
     )
 
     print("Attached necessary policies to Lambda execution role.")
+
+    print("Waiting for Lambda execution role to become assumable...")
+    waiter = iam_client.get_waiter("role_exists")
+    waiter.wait(RoleName=LAMBDA_ROLE_NAME)
+    time.sleep(10)
+
     return role_arn
 
 
@@ -122,7 +127,8 @@ def create_eventbridge_rule(lambda_arn):
 
     response = events_client.put_rule(
         Name="DailyEC2LaunchRule",
-        ScheduleExpression="cron(0 0 * * ? *)",  # Daily at midnight UTC
+        # ScheduleExpression="cron(0 * * * ? *)",  # Daily at midnight UTC
+        ScheduleExpression="cron(* * * * ? *)",  # Every minute
         State="ENABLED",
     )
     rule_arn = response["RuleArn"]
@@ -157,7 +163,9 @@ def create_cloudwatch_rule(lambda_arn):
 
     response = events_client.put_rule(
         Name="EC2ExpirationCheckRule",
-        ScheduleExpression="cron(0 * * * ? *)",  # Every hour at the top of the hour
+        # ScheduleExpression="cron(0 * * * ? *)",  # Every hour at the top of the hour
+        # Every minute
+        ScheduleExpression="cron(*/10 * * * ? *)",
         State="ENABLED",
     )
     rule_arn = response["RuleArn"]
@@ -184,7 +192,6 @@ def create_cloudwatch_rule(lambda_arn):
 
 
 def cleanup_expired_ec2_instances():
-    now = datetime.now(tz.tzutc())
 
     # List all running EC2 instances with the "ShutdownBy" tag
     instances = ec2_client.describe_instances(
@@ -194,18 +201,18 @@ def cleanup_expired_ec2_instances():
         ]
     )
 
-    # Iterate through instances and terminate expired ones
+    # Iterate through instances and terminate the ones that have the "ShutdownBy" tag
     for reservation in instances["Reservations"]:
         for instance in reservation["Instances"]:
-            shutdown_by = next(
+            shutdown = next(
                 (
-                    tag["Value"]
+                    True
                     for tag in instance.get("Tags", [])
                     if tag["Key"] == "ShutdownBy"
                 ),
-                None,
+                False,
             )
-            if shutdown_by and datetime.fromisoformat(shutdown_by) < now:
+            if shutdown:
                 ec2_client.terminate_instances(InstanceIds=[instance["InstanceId"]])
                 print(
                     f"Terminated instance {instance['InstanceId']} due to expired TTL."
@@ -249,9 +256,15 @@ def cleanup_resources():
             print(f"Detached {policy} policy from {rolename} role.")
 
     if resource_exists(iam_client.delete_role, RoleName=LAMBDA_ROLE_NAME):
-        print("Deleted IAM role.")
+        print(f"Deleted IAM role {rolename}.")
 
     print("IAM role deletion check complete.")
+
+    print("Instance profile deletion check complete.")
+
+    # Delete CloudWatch rule if it exists
+    if resource_exists(events_client.delete_rule, Name="EC2ExpirationCheckRule"):
+        print("Deleted CloudWatch rule EC2ExpirationCheckRule.")
 
     # Clean up expired EC2 instances
     cleanup_expired_ec2_instances()
