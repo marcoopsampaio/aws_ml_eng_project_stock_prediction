@@ -5,7 +5,8 @@ import time
 import zipfile
 
 import boto3
-from botocore.exceptions import ClientError
+
+from stock_prediction.deployment.utils import resource_exists
 
 # TODO: refactor names repeated by hand
 
@@ -19,17 +20,6 @@ iam_client = boto3.client("iam", region_name=REGION)
 lambda_client = boto3.client("lambda", region_name=REGION)
 ec2_client = boto3.client("ec2", region_name=REGION)
 events_client = boto3.client("events", region_name=REGION)
-
-
-def resource_exists(func, *args, **kwargs):
-    """
-    Helper function to check if a resource exists before attempting to delete.
-    """
-    try:
-        return func(*args, **kwargs)
-    except ClientError as e:
-        print(f"Resource not found: {e.response['Error']['Message']}")
-        return False
 
 
 def create_lambda_execution_role():
@@ -196,7 +186,6 @@ def cleanup_expired_ec2_instances():
     # List all running EC2 instances with the "ShutdownBy" tag
     instances = ec2_client.describe_instances(
         Filters=[
-            # {"Name": "instance-state-name", "Values": ["running"]},
             {"Name": "tag:ShutdownBy", "Values": ["*"]},
         ]
     )

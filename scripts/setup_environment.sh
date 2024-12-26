@@ -20,6 +20,9 @@ fi
 if ! command -v pyenv &> /dev/null; then
   echo "pyenv not found. Installing pyenv..."
   curl https://pyenv.run | bash
+  # exit to force the user to run this script again
+  echo "Please run this script again"
+  exit 1
 else
   echo "pyenv is already installed."
 fi

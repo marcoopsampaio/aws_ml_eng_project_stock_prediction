@@ -4,6 +4,12 @@ import base64
 import boto3
 from botocore.exceptions import ClientError
 
+from stock_prediction.deployment.utils import (
+    check_security_group_exists,
+    create_security_group,
+    delete_security_group,
+)
+
 USER_DATA_SCRIPT = """#!/bin/bash
 echo "User data script started" > /var/log/user-data.log
 
@@ -38,99 +44,6 @@ DEFAULT_AUTO_SCALING_GROUP_NAME = "dashboard-asg"
 
 DEFAULT_SCALE_UP_POLICY_NAME = "ScaleUpPolicy"
 DEFAULT_SCALE_DOWN_POLICY_NAME = "ScaleDownPolicy"
-
-
-def check_security_group_exists(ec2_resource, group_name):
-    """
-    Check if a security group exists by name.
-    Returns the security group ID if it exists, otherwise None.
-    """
-    try:
-        response = ec2_resource.meta.client.describe_security_groups(
-            GroupNames=[group_name]
-        )
-
-        # If the group exists, return its ID
-        if response["SecurityGroups"]:
-            security_group_id = response["SecurityGroups"][0]["GroupId"]
-            print(f"Security Group found with ID: {security_group_id}")
-            return security_group_id
-        else:
-            print("Security Group not found.")
-            return None
-    except ec2_resource.meta.client.exceptions.ClientError as e:
-        # If error occurs, it might be because the group doesn't exist
-        if "InvalidGroup.NotFound" in str(e):
-            print("Security Group not found.")
-            return None
-        else:
-            # Re-raise any other exception
-            raise
-
-
-def create_security_group(
-    ec2_resource,
-    group_name=DEFAULT_SECURITY_GROUP_NAME,
-    description="Security group for Dash dashboard",
-):
-    """
-    Create a new security group.
-    """
-    # Check if the security group already exists
-    security_group_id = check_security_group_exists(ec2_resource, group_name)
-
-    if security_group_id:
-        print(f"Security Group already exists with ID: {security_group_id}")
-        return security_group_id
-
-    # If it doesn't exist, create a new security group
-    security_group = ec2_resource.create_security_group(
-        GroupName=group_name, Description=description
-    )
-
-    # Allow inbound traffic for SSH and Dash port (8050)
-    security_group.authorize_ingress(
-        IpPermissions=[
-            {
-                "IpProtocol": "tcp",
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-            },
-            {
-                "IpProtocol": "tcp",
-                "FromPort": 8050,
-                "ToPort": 8050,
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-            },
-        ]
-    )
-
-    print(f"Security Group Created with ID: {security_group.id}")
-    return security_group.id
-
-
-def launch_ec2_instance(ec2_resource, security_group_id, key_name=DEFAULT_KEY_NAME):
-    # Launch an EC2 instance
-    instances = ec2_resource.create_instances(
-        ImageId=DEFAULT_AMI_ID,  # Replace with a valid AMI ID
-        InstanceType=DEFAULT_INSTANCE_TYPE,
-        KeyName=key_name,
-        SecurityGroupIds=[security_group_id],
-        MinCount=1,
-        MaxCount=1,
-        UserData=USER_DATA_SCRIPT,
-    )
-
-    instance = instances[0]
-    print(f"EC2 Instance launched with ID: {instance.id}")
-
-    # Wait until the instance is running
-    instance.wait_until_running()
-    instance.load()
-
-    print(f"EC2 Instance {instance.id} is now running.")
-    return instance.id
 
 
 def make_launch_template(
@@ -421,18 +334,6 @@ def get_public_subnets(ec2_resource):
     return public_subnet_ids
 
 
-def delete_security_group(ec2_resource, security_group_id):
-    """
-    Delete the security group by ID.
-    """
-    try:
-        security_group = ec2_resource.SecurityGroup(security_group_id)
-        security_group.delete()
-        print(f"Security Group {security_group_id} deleted.")
-    except ClientError as e:
-        print(f"Error deleting security group {security_group_id}: {str(e)}")
-
-
 def delete_auto_scaling_group(autoscaling_client, group_name):
     """
     Delete the Auto Scaling Group by name.
@@ -534,7 +435,12 @@ def main():
         delete_resources(ec2_resource, autoscaling_client, elb_client)
     else:
         # Create a Security Group
-        security_group_id = create_security_group(ec2_resource)
+        security_group_id = create_security_group(
+            ec2_resource=ec2_resource,
+            group_name=DEFAULT_SECURITY_GROUP_NAME,
+            description="Security group for Dash dashboard",
+            port8050=True,
+        )
         # Get_public_subnets
         subnet_ids = get_public_subnets(ec2_resource)
         # Create Auto Scaling Group and Load Balancer
