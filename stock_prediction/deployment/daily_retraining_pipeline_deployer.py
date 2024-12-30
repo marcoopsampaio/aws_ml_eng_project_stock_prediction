@@ -52,25 +52,17 @@ def create_lambda_execution_role():
     print(f"Created Lambda execution role: {role_arn}")
 
     # Attach the necessary policies
-    iam_client.attach_role_policy(
-        RoleName=LAMBDA_ROLE_NAME,
-        PolicyArn="arn:aws:iam::aws:policy/AWSLambda_FullAccess",
-    )
-
-    iam_client.attach_role_policy(
-        RoleName=LAMBDA_ROLE_NAME,
-        PolicyArn="arn:aws:iam::aws:policy/AmazonEC2FullAccess",
-    )
-
-    iam_client.attach_role_policy(
-        RoleName=LAMBDA_ROLE_NAME,
-        PolicyArn="arn:aws:iam::aws:policy/CloudWatchLogsFullAccess",
-    )
-
-    iam_client.attach_role_policy(
-        RoleName=LAMBDA_ROLE_NAME,
-        PolicyArn="arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess",
-    )
+    for policy in [
+        "AWSLambda_FullAccess",
+        "AmazonEC2FullAccess",
+        "CloudWatchLogsFullAccess",
+        "AmazonEventBridgeFullAccess",
+        "IAMFullAccess",
+    ]:
+        iam_client.attach_role_policy(
+            RoleName=LAMBDA_ROLE_NAME,
+            PolicyArn=f"arn:aws:iam::aws:policy/{policy}",
+        )
 
     print("Attached necessary policies to Lambda execution role.")
 
@@ -89,10 +81,20 @@ def create_lambda_function(function_name, file_name, handler_name, role_arn):
         print(f"Lambda function {function_name} already exists.")
         return exists["Configuration"]["FunctionArn"]
 
-    # Create a ZIP file with the Lambda function code
+    # Create a ZIP file with the Lambda function code and utils.py
     zip_file = f"{function_name}.zip"
     with zipfile.ZipFile(zip_file, "w") as zf:
+        # Add the main Lambda handler file
         zf.write(file_name, os.path.basename(file_name))
+
+        # Add utils.py and info.yaml to the ZIP file
+        for file in ["utils.py", "info.yaml"]:
+            if os.path.exists(file):
+                zf.write(file, os.path.basename(file))
+            else:
+                print(
+                    f"Warning: {file} not found and will not be included in the package."
+                )
 
     # Upload Lambda function code
     with open(zip_file, "rb") as f:
@@ -181,7 +183,7 @@ def create_cloudwatch_rule(lambda_arn):
     print("CloudWatch rule linked to termination Lambda function.")
 
 
-def cleanup_expired_ec2_instances():
+def terminate_ec2_instances():
 
     # List all running EC2 instances with the "ShutdownBy" tag
     instances = ec2_client.describe_instances(
@@ -204,7 +206,7 @@ def cleanup_expired_ec2_instances():
             if shutdown:
                 ec2_client.terminate_instances(InstanceIds=[instance["InstanceId"]])
                 print(
-                    f"Terminated instance {instance['InstanceId']} due to expired TTL."
+                    f"Terminated instance {instance['InstanceId']} with the 'ShutdownBy' tag."
                 )
 
 
@@ -238,6 +240,7 @@ def cleanup_resources():
         (LAMBDA_ROLE_NAME, "arn:aws:iam::aws:policy/AmazonEC2FullAccess"),
         (LAMBDA_ROLE_NAME, "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"),
         (LAMBDA_ROLE_NAME, "arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess"),
+        (LAMBDA_ROLE_NAME, "arn:aws:iam::aws:policy/IAMFullAccess"),
     ]:
         if resource_exists(
             iam_client.detach_role_policy, RoleName=rolename, PolicyArn=policy
@@ -256,7 +259,7 @@ def cleanup_resources():
         print("Deleted CloudWatch rule EC2ExpirationCheckRule.")
 
     # Clean up expired EC2 instances
-    cleanup_expired_ec2_instances()
+    terminate_ec2_instances()
 
 
 def main():

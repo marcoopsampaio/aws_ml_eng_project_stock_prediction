@@ -1,38 +1,91 @@
 import argparse
 import base64
+import time
 
 import boto3
+import yaml
 from botocore.exceptions import ClientError
 
 from stock_prediction.deployment.utils import (
+    BUCKET_NAME,
     check_security_group_exists,
+    create_s3_access_iam_role,
     create_security_group,
     delete_security_group,
+    get_or_create_instance_s3_access_profile,
 )
 
-USER_DATA_SCRIPT = """#!/bin/bash
-echo "User data script started" > /var/log/user-data.log
+# USER_DATA_SCRIPT = """#!/bin/bash
+# echo "User data script started" > /var/log/user-data.log
 
-# Update and install necessary packages
-sudo apt-get update -y >> /var/log/user-data.log 2>&1
-sudo apt-get install python3 python3-pip python3-venv -y >> /var/log/user-data.log 2>&1
+# # Update and install necessary packages
+# sudo apt-get update -y >> /var/log/user-data.log 2>&1
+# sudo apt-get install python3 python3-pip python3-venv -y >> /var/log/user-data.log 2>&1
 
-# Create a virtual environment in the /home/ubuntu directory
-python3 -m venv /home/ubuntu/dash_env >> /var/log/user-data.log 2>&1
+# # Create a virtual environment in the /home/ubuntu directory
+# python3 -m venv /home/ubuntu/dash_env >> /var/log/user-data.log 2>&1
 
-# Activate the virtual environment and install Dash
-source /home/ubuntu/dash_env/bin/activate >> /var/log/user-data.log 2>&1
-pip install dash >> /var/log/user-data.log 2>&1
+# # Activate the virtual environment and install Dash
+# source /home/ubuntu/dash_env/bin/activate >> /var/log/user-data.log 2>&1
+# pip install dash >> /var/log/user-data.log 2>&1
 
-# Create a simple Dash app
-echo "from dash import Dash\napp = Dash(__name__)\nimport dash.html as html\napp.layout = html.Div('Hello, Dash!')\napp.run(host='0.0.0.0', port=8050)" > /home/ubuntu/dashboard.py
+# # Create a simple Dash app
+# echo "from dash import Dash\napp = Dash(__name__)\nimport dash.html as html\napp.layout = html.Div('Hello, Dash!')\napp.run(host='0.0.0.0', port=8050)" > /home/ubuntu/dashboard.py
 
-# Run the Dash app in the background
-nohup /home/ubuntu/dash_env/bin/python /home/ubuntu/dashboard.py >> /var/log/user-data.log 2>&1 &
+# # Run the Dash app in the background
+# nohup /home/ubuntu/dash_env/bin/python /home/ubuntu/dashboard.py >> /var/log/user-data.log 2>&1 &
 
-echo "User data script completed" >> /var/log/user-data.log
+# echo "User data script completed" >> /var/log/user-data.log
+#     """
+
+USER_DATA_SCRIPT = (
+    f"""#!/bin/bash
+exec > /var/log/user-data.log 2>&1
+cd ~
+# Load environment variables
+source /root/.bashrc
+export PYENV_ROOT="/root/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+# Navigate to the project directory
+cd /root/aws_ml_eng_project_stock_prediction
+
+cat << EOF > /root/temp_script.py
+import boto3
+import os
+
+# Specify the bucket name
+region = "us-east-1"  # Specify your preferred AWS region
+
+# Initialize S3 client
+s3 = boto3.client("s3")
+
+dummy_filename = "dummy_file.txt"
+
+# Download the file from the S3 bucket
+try:
+    s3.download_file("{BUCKET_NAME}", dummy_filename, dummy_filename)
+    print(f"File """
+    """{dummy_filename} downloaded from bucket """
+    f"""{BUCKET_NAME}.")"""
     """
-DEFAULT_AMI_ID = "ami-0e2c8caa4b6378d8c"
+except Exception as e:
+    print(f"Error downloading file: {e}")
+EOF
+
+# Run the Python script inside the Poetry environment
+poetry run python3 /root/temp_script.py
+#sleep 60
+#sudo shutdown -h now
+"""
+)
+# get DEFAULT_AMI_ID form info.yaml
+with open("info.yaml", "r") as yaml_file:
+    info = yaml.safe_load(yaml_file)
+    DEFAULT_AMI_ID = info.get("AMI_ID")
+# DEFAULT_AMI_ID = "ami-037ab4a1b19cbcf54" #"ami-0e2c8caa4b6378d8c"
 DEFAULT_INSTANCE_TYPE = "t2.micro"
 DEFAULT_KEY_NAME = "capstone_project"
 
@@ -47,7 +100,12 @@ DEFAULT_SCALE_DOWN_POLICY_NAME = "ScaleDownPolicy"
 
 
 def make_launch_template(
-    ec2_client, launch_template_name, security_group_id, user_data_script, key_name
+    ec2_client,
+    launch_template_name,
+    security_group_id,
+    user_data_script,
+    key_name,
+    instance_profile_arn,
 ):
     user_data_base64 = base64.b64encode(user_data_script.encode("utf-8")).decode(
         "utf-8"
@@ -70,6 +128,9 @@ def make_launch_template(
                     "SecurityGroupIds": [security_group_id],
                     "UserData": user_data_base64,
                     "KeyName": key_name,
+                    "IamInstanceProfile": {
+                        "Arn": instance_profile_arn  # Attach IAM role to instance
+                    },
                 },
             )
             return response["LaunchTemplate"]["LaunchTemplateId"]
@@ -193,13 +254,29 @@ def deploy_with_autoscaling(
     scale_down_policy_name=DEFAULT_SCALE_DOWN_POLICY_NAME,
 ):
     ec2_client = boto3.client("ec2")
+    iam_client = boto3.client("iam")
 
+    _ = create_s3_access_iam_role(iam_client)  # Create IAM role with S3 permissions
+    instance_profile_name = get_or_create_instance_s3_access_profile(
+        iam_client, profile_suffix="DashboardInstanceProfile"
+    )  # Create Instance Profile
+
+    # get instance profile arn from instance profile name
+    response = iam_client.get_instance_profile(
+        InstanceProfileName=instance_profile_name
+    )
+    instance_profile_arn = response["InstanceProfile"]["Arn"]
+    print(f"Instance profile ARN: {instance_profile_arn}")
+    time.sleep(30)
+
+    # create launch template
     launch_template_id = make_launch_template(
         ec2_client=ec2_client,
         launch_template_name=launch_template_name,
         security_group_id=security_group_id,
         user_data_script=user_data_script,
         key_name=key_name,
+        instance_profile_arn=instance_profile_arn,
     )
 
     response = ec2_client.describe_subnets(SubnetIds=subnet_ids)
