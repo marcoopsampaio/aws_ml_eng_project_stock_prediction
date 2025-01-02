@@ -85,7 +85,6 @@ poetry run python3 /root/temp_script.py
 with open("info.yaml", "r") as yaml_file:
     info = yaml.safe_load(yaml_file)
     DEFAULT_AMI_ID = info.get("AMI_ID")
-# DEFAULT_AMI_ID = "ami-037ab4a1b19cbcf54" #"ami-0e2c8caa4b6378d8c"
 DEFAULT_INSTANCE_TYPE = "t2.micro"
 DEFAULT_KEY_NAME = "capstone_project"
 

@@ -24,19 +24,18 @@ def extract_ticker_data(
 
     if cache_path.exists() and not overwrite_cache:
         logger.info(f"Loading data from cache: {cache_path}")
-        return pd.read_csv(cache_path)
+    else:
+        df_all_symbols = qs.utils.download_returns(symbols)
 
-    df_all_symbols = qs.utils.download_returns(symbols)
+        logger.info("All symbols data extracted.")
 
-    logger.info("All symbols data extracted.")
-
-    df_all_symbols.to_csv(cache_path)
-
-    return df_all_symbols
+        df_all_symbols.to_csv(cache_path)
+    return pd.read_csv(cache_path)
 
 
-def load_cleaned_dataset():
-    df_all_symbols = pd.read_csv(DEFAULT_DATA_EXTRACTION_OUTPUT_PATH)
+def load_cleaned_dataset(df_all_symbols=None):
+    if df_all_symbols is None:
+        df_all_symbols = pd.read_csv(DEFAULT_DATA_EXTRACTION_OUTPUT_PATH)
     df_all_symbols["Date"] = df_all_symbols["Date"].apply(lambda x: pd.Timestamp(x))
     df_all_symbols = df_all_symbols.set_index("Date")
     first_index = df_all_symbols.isna().sum()
@@ -48,6 +47,10 @@ def load_cleaned_dataset():
     cols_final = [
         col for col in df_all_symbols.columns if col not in ["RGI", "RYH", "RYT"]
     ]
+
+    logger.info(
+        f"Dataset loaded with {df_all_symbols_clipped.shape[0]} samples and {df_all_symbols_clipped.shape[1]} features."
+    )
 
     return df_all_symbols_clipped[cols_final]
 

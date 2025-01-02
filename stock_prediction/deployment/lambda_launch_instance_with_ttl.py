@@ -16,7 +16,6 @@ REGION = "us-east-1"
 with open("info.yaml", "r") as yaml_file:
     info = yaml_file.readlines()
     AMI_ID = info[0].split(":")[1].strip()
-# AMI_ID = "ami-037ab4a1b19cbcf54" #"ami-0e2c8caa4b6378d8c"
 INSTANCE_TYPE = "t2.micro"
 KEY_NAME = "capstone_project"
 # SECURITY_GROUP = "your-security-group-id"
@@ -40,6 +39,9 @@ eval "$(pyenv virtualenv-init -)"
 
 # Navigate to the project directory
 cd /root/aws_ml_eng_project_stock_prediction
+
+# run retraining script
+poetry run python stock_prediction/modelling/train.py
 
 cat << EOF > /root/temp_script.py
 import boto3
@@ -75,7 +77,8 @@ with open(dummy_filename, "w") as file:
 
 # Upload the file to the S3 bucket
 try:
-    s3.upload_file(dummy_filename, "{BUCKET_NAME}", dummy_filename)
+    #s3.upload_file(dummy_filename, "{BUCKET_NAME}", dummy_filename)
+    s3.upload_file(dummy_filename, "{BUCKET_NAME}", "predictions.feather")
     print(f"File """
     """{dummy_filename} uploaded to bucket """
     f"""{BUCKET_NAME}.")"""
@@ -88,7 +91,7 @@ os.remove(dummy_filename)
 EOF
 
 # Run the Python script inside the Poetry environment
-poetry run python3 /root/temp_script.py
+poetry run python /root/temp_script.py
 #sleep 60
 #sudo shutdown -h now
 """
