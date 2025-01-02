@@ -4,10 +4,9 @@ import os
 import boto3
 import yaml
 
-from stock_prediction.deployment.utils import create_security_group
+from stock_prediction.deployment.utils import DEFAULT_REGION, create_security_group
 
 # AWS Configuration
-REGION = "us-east-1"
 INSTANCE_TYPE = "t2.micro"
 AMI_ID = "ami-0e2c8caa4b6378d8c"
 KEY_NAME = "capstone_project"
@@ -15,8 +14,8 @@ SECURITY_GROUP_NAME = "custom-security-group"
 INFO_FILE = "info.yaml"
 
 # Initialize Boto3 clients
-ec2_client = boto3.client("ec2", region_name=REGION)
-ec2_resource = boto3.resource("ec2", region_name=REGION)
+ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
+ec2_resource = boto3.resource("ec2", region_name=DEFAULT_REGION)
 
 
 def launch_instance(security_group_id):

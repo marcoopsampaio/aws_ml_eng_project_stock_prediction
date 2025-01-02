@@ -22,10 +22,6 @@ server = app.server
 
 DEFAULT_SYMBOLS = ["SPY", "QQQ"]
 
-# TODO: fix duplicate date
-# df_results = pd.read_feather("example_predictions.feather")
-# df_results = pd.read_feather("predictions.feather")
-
 
 # Load initial data
 def fetch_predictions_from_s3():
@@ -100,14 +96,8 @@ app.layout = html.Div(
             [
                 html.P(
                     [
-                        "TODO: Description of what this dashboard is about and how the model was built",
-                        html.A(
-                            "here",
-                            href="https://www.kaggle.com/sudalairajkumar/novel-corona-virus-2019-dataset",
-                            target="_blank",
-                        ),
-                        ". The model used for forecasting is the double exponential model "
-                        "I have presented in ... The code can be found in this ",
+                        "TODO: Description of what this dashboard is about,  how the model was built and how to use it",
+                        "The code can be found in this ",
                         html.A("gitlab repo", href=GIT_REPO, target="_blank"),
                         ".",
                     ]
@@ -171,6 +161,7 @@ def refresh_data(n_intervals):
     return list_dict_symbols
 
 
+# Callback to update the left graph
 @app.callback(Output("symbols-graph", "figure"), [Input("symbols-dropdown", "value")])
 def update_graph(selected_dropdown_value):
 
@@ -188,6 +179,7 @@ def update_graph(selected_dropdown_value):
     return figure
 
 
+# Callback to update the right graph
 @app.callback(Output("symbols-graph2", "figure"), [Input("symbols-dropdown", "value")])
 def update_graph2(selected_dropdown_value):
 
@@ -205,7 +197,7 @@ def update_graph2(selected_dropdown_value):
     return figure
 
 
-# for the table
+# Generate and update the table
 @app.callback(
     Output("forecast-table", "children"), [Input("symbols-dropdown", "value")]
 )
@@ -233,9 +225,10 @@ def timeline_symbols_filtered_by_keys(results_filtered, n_xzoom=None):
 
     i = 0
     for symbol in results_filtered.columns:
+        # Choose a color
         color_index = i % (len(colors_list))
-        # color = colors_list[color_index]
         color_faint = colors_list_faint[color_index]
+        # Plot prediction
         i += 1
         x_vals2 = results_filtered[symbol].index.values[-20:]
         trace1 = go.Scatter(
@@ -247,27 +240,19 @@ def timeline_symbols_filtered_by_keys(results_filtered, n_xzoom=None):
             line=dict(color=color_faint, width=2, dash="dash"),
         )
         trace_list.append(trace1)
+        # Plot history
         if n_xzoom:
             x_vals = results_filtered[symbol].index.values[-n_xzoom:-20]
             y_vals = results_filtered[symbol].values[-n_xzoom:-20]
         else:
             x_vals = results_filtered[symbol].index.values[:-20]
             y_vals = results_filtered[symbol].values[:-20]
-
         trace2 = go.Scatter(
             x=x_vals,
             y=y_vals,
             mode="lines",
             name=symbol,
             line=dict(color=color_faint, width=2),
-            # marker=dict(
-            #     color='rgba(0, 0, 0, 0.)',
-            #     line=dict(
-            #         color=color,
-            #         width=1
-            #     ),
-            #     size=1
-            # )
         )
         trace_list.append(trace2)
         xmax_this = max(x_vals[-1], x_vals2[-1])
@@ -280,5 +265,4 @@ def timeline_symbols_filtered_by_keys(results_filtered, n_xzoom=None):
 
 
 if __name__ == "__main__":
-    # app.run_server(debug=True)
     app.run_server(debug=False, host="0.0.0.0", port=8050)

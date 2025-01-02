@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
 import boto3
+from utils import DEFAULT_REGION
 
-REGION = "us-east-1"
-
-ec2_client = boto3.client("ec2", region_name=REGION)
+ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
 
 
 def lambda_handler(event, context):

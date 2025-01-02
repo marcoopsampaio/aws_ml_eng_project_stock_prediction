@@ -5,11 +5,12 @@ import boto3
 from dateutil import tz
 from utils import (
     BUCKET_NAME,
+    DEFAULT_REGION,
+    PREDICTIONS_FILE_NAME,
     create_s3_access_iam_role,
     get_or_create_instance_s3_access_profile,
 )
 
-REGION = "us-east-1"
 # read ami id from info.yaml konwing that the first line has
 # this format AMI_ID: <ami_id> to avoid having to send the
 # yaml library package to lambda
@@ -50,10 +51,10 @@ import boto3
 import os
 
 # Specify the bucket name
-region = "us-east-1"  # Specify your preferred AWS region
+region = "{DEFAULT_REGION}"  # Specify your preferred AWS region
 
 # Initialize S3 client
-s3 = boto3.client("s3")
+s3 = boto3.client("s3", region_name=region)
 
 # Create bucket if it does not exist
 try:
@@ -69,33 +70,20 @@ except Exception as e:
     print(f"Error creating bucket: {e}")"""
     f"""
 
-# Dummy file content
-dummy_content = "This is a dummy file for testing S3 operations."
-dummy_filename = "dummy_file.txt"
-
-# Write content to a local file
-with open(dummy_filename, "w") as file:
-    file.write(dummy_content)
-
 # Upload the file to the S3 bucket
 try:
-    #s3.upload_file(dummy_filename, "{BUCKET_NAME}", dummy_filename)
-    s3.upload_file("predictions.feather", "{BUCKET_NAME}", "predictions.feather")
-    print(f"File """
-    """{dummy_filename} uploaded to bucket """
-    f"""{BUCKET_NAME}.")"""
+    s3.upload_file("{PREDICTIONS_FILE_NAME}", "{BUCKET_NAME}", "{PREDICTIONS_FILE_NAME}")
+    print(f"File {PREDICTIONS_FILE_NAME} uploaded to bucket {BUCKET_NAME}.")"""
     """
 except Exception as e:
     print(f"Error uploading file: {e}")
 
-# Clean up the local dummy file
-os.remove(dummy_filename)
 EOF
 
 # Run the Python script inside the Poetry environment
 poetry run python /root/temp_script.py
-#sleep 60
-#sudo shutdown -h now
+sleep 60
+sudo shutdown -h now
 """
 )
 
@@ -146,8 +134,8 @@ def get_or_create_security_group(ec2_client):
 
 def lambda_handler(event, context):
     # Create a boto3 client for EC2 and IAM
-    ec2_client = boto3.client("ec2", region_name=REGION)
-    iam_client = boto3.client("iam", region_name=REGION)
+    ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
+    iam_client = boto3.client("iam", region_name=DEFAULT_REGION)
 
     # Create or retrieve IAM role and instance profile
     _ = create_s3_access_iam_role(iam_client)

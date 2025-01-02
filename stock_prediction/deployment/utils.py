@@ -10,6 +10,7 @@ S3_ACCESS_ROLE_NAME = "EC2S3AccessRole"
 S3_ACCESS_POLICY_NAME = "EC2S3AccessPolicy"
 BUCKET_NAME = "capstone-project-bucket-mops"
 PREDICTIONS_FILE_NAME = "predictions.feather"
+DEFAULT_REGION = "us-east-1"
 
 # Define the policy document for S3 access
 S3_ACCESS_POLICY = {

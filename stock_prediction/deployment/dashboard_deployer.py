@@ -7,35 +7,13 @@ import yaml
 from botocore.exceptions import ClientError
 
 from stock_prediction.deployment.utils import (
+    DEFAULT_REGION,
     check_security_group_exists,
     create_s3_access_iam_role,
     create_security_group,
     delete_security_group,
     get_or_create_instance_s3_access_profile,
 )
-
-# USER_DATA_SCRIPT = """#!/bin/bash
-# echo "User data script started" > /var/log/user-data.log
-
-# # Update and install necessary packages
-# sudo apt-get update -y >> /var/log/user-data.log 2>&1
-# sudo apt-get install python3 python3-pip python3-venv -y >> /var/log/user-data.log 2>&1
-
-# # Create a virtual environment in the /home/ubuntu directory
-# python3 -m venv /home/ubuntu/dash_env >> /var/log/user-data.log 2>&1
-
-# # Activate the virtual environment and install Dash
-# source /home/ubuntu/dash_env/bin/activate >> /var/log/user-data.log 2>&1
-# pip install dash >> /var/log/user-data.log 2>&1
-
-# # Create a simple Dash app
-# echo "from dash import Dash\napp = Dash(__name__)\nimport dash.html as html\napp.layout = html.Div('Hello, Dash!')\napp.run(host='0.0.0.0', port=8050)" > /home/ubuntu/dashboard.py
-
-# # Run the Dash app in the background
-# nohup /home/ubuntu/dash_env/bin/python /home/ubuntu/dashboard.py >> /var/log/user-data.log 2>&1 &
-
-# echo "User data script completed" >> /var/log/user-data.log
-#     """
 
 USER_DATA_SCRIPT = """#!/bin/bash
 exec > /var/log/user-data.log 2>&1
@@ -55,7 +33,8 @@ git checkout marcoopsampaio/model_development
 
 poetry run python ./stock_prediction/dashboard/dashboard.py
 """
-# get DEFAULT_AMI_ID form info.yaml
+
+# get DEFAULT_AMI_ID from info.yaml
 with open("info.yaml", "r") as yaml_file:
     info = yaml.safe_load(yaml_file)
     DEFAULT_AMI_ID = info.get("AMI_ID")
@@ -126,12 +105,6 @@ def make_target_group(elb_client, target_group_name, vpc_id):
                 Port=8050,  # Dash app port
                 VpcId=vpc_id,
                 TargetType="instance",
-                # HealthCheckProtocol="HTTP",
-                # HealthCheckPort="8050",
-                # HealthCheckPath="/",  # Health check at root
-                # HealthCheckIntervalSeconds=30,
-                # HealthyThresholdCount=3,
-                # UnhealthyThresholdCount=3,
             )
             return response["TargetGroups"][0]["TargetGroupArn"]
         else:
@@ -226,8 +199,8 @@ def deploy_with_autoscaling(
     scale_up_policy_name=DEFAULT_SCALE_UP_POLICY_NAME,
     scale_down_policy_name=DEFAULT_SCALE_DOWN_POLICY_NAME,
 ):
-    ec2_client = boto3.client("ec2")
-    iam_client = boto3.client("iam")
+    ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
+    iam_client = boto3.client("iam", region_name=DEFAULT_REGION)
 
     _ = create_s3_access_iam_role(iam_client)  # Create IAM role with S3 permissions
     instance_profile_name = get_or_create_instance_s3_access_profile(
@@ -317,7 +290,7 @@ def deploy_with_autoscaling(
 
     # Create CloudWatch alarms
     print("Creating CloudWatch alarms")
-    cloudwatch_client = boto3.client("cloudwatch")
+    cloudwatch_client = boto3.client("cloudwatch", region_name=DEFAULT_REGION)
     cloudwatch_client.put_metric_alarm(
         AlarmName="ScaleUpAlarm",
         MetricName="CPUUtilization",
@@ -454,7 +427,7 @@ def delete_resources(ec2_resource, autoscaling_client, elb_client):
     delete_load_balancer(elb_client, DEFAULT_LOAD_BALANCER_NAME)
 
     # Delete Launch Template
-    ec2_client = boto3.client("ec2")
+    ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
     delete_launch_template(ec2_client, DEFAULT_LAUNCH_TEMPLATE_NAME)
 
     # Delete Target Group
@@ -477,9 +450,9 @@ def main():
     args = parser.parse_args()
 
     # Initialize resources and clients
-    ec2_resource = boto3.resource("ec2")
-    autoscaling_client = boto3.client("autoscaling")
-    elb_client = boto3.client("elbv2")
+    ec2_resource = boto3.resource("ec2", region_name=DEFAULT_REGION)
+    autoscaling_client = boto3.client("autoscaling", region_name=DEFAULT_REGION)
+    elb_client = boto3.client("elbv2", region_name=DEFAULT_REGION)
 
     if args.cleanup:
         delete_resources(ec2_resource, autoscaling_client, elb_client)

@@ -6,20 +6,19 @@ import zipfile
 
 import boto3
 
-from stock_prediction.deployment.utils import resource_exists
+from stock_prediction.deployment.utils import DEFAULT_REGION, resource_exists
 
-# TODO: refactor names repeated by hand
+# TODO: Adjust Cron tabs
 
 # AWS Configuration
-REGION = "us-east-1"
 LAMBDA_ROLE_NAME = "LambdaExecutionRoleForEC2"
 TTL_DURATION = 6 * 3600  # TTL in seconds (e.g., 6 hour)
 
 # Initialize clients
-iam_client = boto3.client("iam", region_name=REGION)
-lambda_client = boto3.client("lambda", region_name=REGION)
-ec2_client = boto3.client("ec2", region_name=REGION)
-events_client = boto3.client("events", region_name=REGION)
+iam_client = boto3.client("iam", region_name=DEFAULT_REGION)
+lambda_client = boto3.client("lambda", region_name=DEFAULT_REGION)
+ec2_client = boto3.client("ec2", region_name=DEFAULT_REGION)
+events_client = boto3.client("events", region_name=DEFAULT_REGION)
 
 
 def create_lambda_execution_role():
