@@ -7,7 +7,6 @@ import yaml
 from botocore.exceptions import ClientError
 
 from stock_prediction.deployment.utils import (
-    BUCKET_NAME,
     check_security_group_exists,
     create_s3_access_iam_role,
     create_security_group,
@@ -38,8 +37,7 @@ from stock_prediction.deployment.utils import (
 # echo "User data script completed" >> /var/log/user-data.log
 #     """
 
-USER_DATA_SCRIPT = (
-    f"""#!/bin/bash
+USER_DATA_SCRIPT = """#!/bin/bash
 exec > /var/log/user-data.log 2>&1
 cd ~
 # Load environment variables
@@ -52,35 +50,11 @@ eval "$(pyenv virtualenv-init -)"
 # Navigate to the project directory
 cd /root/aws_ml_eng_project_stock_prediction
 
-cat << EOF > /root/temp_script.py
-import boto3
-import os
+git pull
+git checkout marcoopsampaio/model_development
 
-# Specify the bucket name
-region = "us-east-1"  # Specify your preferred AWS region
-
-# Initialize S3 client
-s3 = boto3.client("s3")
-
-dummy_filename = "dummy_file.txt"
-
-# Download the file from the S3 bucket
-try:
-    s3.download_file("{BUCKET_NAME}", dummy_filename, dummy_filename)
-    print(f"File """
-    """{dummy_filename} downloaded from bucket """
-    f"""{BUCKET_NAME}.")"""
-    """
-except Exception as e:
-    print(f"Error downloading file: {e}")
-EOF
-
-# Run the Python script inside the Poetry environment
-poetry run python3 /root/temp_script.py
-#sleep 60
-#sudo shutdown -h now
+poetry run python ./stock_prediction/dashboard/dashboard.py
 """
-)
 # get DEFAULT_AMI_ID form info.yaml
 with open("info.yaml", "r") as yaml_file:
     info = yaml.safe_load(yaml_file)

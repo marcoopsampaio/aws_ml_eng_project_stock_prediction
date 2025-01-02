@@ -120,7 +120,7 @@ def create_eventbridge_rule(lambda_arn):
     response = events_client.put_rule(
         Name="DailyEC2LaunchRule",
         # ScheduleExpression="cron(0 * * * ? *)",  # Daily at midnight UTC
-        ScheduleExpression="cron(*/5 * * * ? *)",  # Every minute
+        ScheduleExpression="cron(* * * * ? *)",  # Every minute
         State="ENABLED",
     )
     rule_arn = response["RuleArn"]

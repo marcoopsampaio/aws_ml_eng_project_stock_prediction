@@ -39,9 +39,11 @@ eval "$(pyenv virtualenv-init -)"
 
 # Navigate to the project directory
 cd /root/aws_ml_eng_project_stock_prediction
+git pull
+git checkout marcoopsampaio/model_development
 
 # run retraining script
-poetry run python stock_prediction/modelling/train.py
+poetry run python ./stock_prediction/modeling/train.py
 
 cat << EOF > /root/temp_script.py
 import boto3
@@ -78,7 +80,7 @@ with open(dummy_filename, "w") as file:
 # Upload the file to the S3 bucket
 try:
     #s3.upload_file(dummy_filename, "{BUCKET_NAME}", dummy_filename)
-    s3.upload_file(dummy_filename, "{BUCKET_NAME}", "predictions.feather")
+    s3.upload_file("predictions.feather", "{BUCKET_NAME}", "predictions.feather")
     print(f"File """
     """{dummy_filename} uploaded to bucket """
     f"""{BUCKET_NAME}.")"""

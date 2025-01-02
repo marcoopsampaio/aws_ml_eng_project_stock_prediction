@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 import yfinance as yf
 
+from stock_prediction.deployment.utils import PREDICTIONS_FILE_NAME
 from stock_prediction.etl.ticker_data_extractors import (
     extract_ticker_data,
     load_cleaned_dataset,
@@ -115,6 +116,6 @@ if __name__ == "__main__":
 
     df_all_symbols_prices = pd.concat([df_all_symbols_prices, df_predictions])
 
-    df_all_symbols_prices.to_feather("predictions.feather")
+    df_all_symbols_prices.to_feather(PREDICTIONS_FILE_NAME)
 
-    logger.info("Predictions saved to predictions.feather")
+    logger.info(f"Predictions saved to {PREDICTIONS_FILE_NAME}")
