@@ -14,6 +14,9 @@ from stock_prediction.deployment.utils import (
     delete_security_group,
     get_or_create_instance_s3_access_profile,
 )
+from stock_prediction.helpers.logging.log_config import get_logger
+
+logger = get_logger()
 
 USER_DATA_SCRIPT = """#!/bin/bash
 exec > /var/log/user-data.log 2>&1
@@ -67,11 +70,15 @@ def make_launch_template(
             LaunchTemplateNames=[launch_template_name]
         )
         if response["LaunchTemplates"]:
-            print(f"Launch Template {launch_template_name} already exists. Reusing.")
+            logger.info(
+                f"Launch Template {launch_template_name} already exists. Reusing."
+            )
             return response["LaunchTemplates"][0]["LaunchTemplateId"]
     except ClientError as e:
         if "InvalidLaunchTemplateName.NotFoundException" in str(e):
-            print(f"Launch Template {launch_template_name} does not exist. Creating.")
+            logger.info(
+                f"Launch Template {launch_template_name} does not exist. Creating."
+            )
             response = ec2_client.create_launch_template(
                 LaunchTemplateName=launch_template_name,
                 LaunchTemplateData={
@@ -94,11 +101,11 @@ def make_target_group(elb_client, target_group_name, vpc_id):
     try:
         response = elb_client.describe_target_groups(Names=[target_group_name])
         if response["TargetGroups"]:
-            print(f"Target Group {target_group_name} already exists. Reusing.")
+            logger.info(f"Target Group {target_group_name} already exists. Reusing.")
             return response["TargetGroups"][0]["TargetGroupArn"]
     except ClientError as e:
         if "TargetGroupNotFound" in str(e):
-            print(f"Target Group {target_group_name} does not exist. Creating.")
+            logger.info(f"Target Group {target_group_name} does not exist. Creating.")
             response = elb_client.create_target_group(
                 Name=target_group_name,
                 Protocol="HTTP",
@@ -115,11 +122,11 @@ def make_load_balancer(elb_client, load_balancer_name, subnet_ids, security_grou
     try:
         response = elb_client.describe_load_balancers(Names=[load_balancer_name])
         if response["LoadBalancers"]:
-            print(f"Load Balancer {load_balancer_name} already exists. Reusing.")
+            logger.info(f"Load Balancer {load_balancer_name} already exists. Reusing.")
             return response["LoadBalancers"][0]["LoadBalancerArn"]
     except ClientError as e:
         if "LoadBalancerNotFound" in str(e):
-            print(f"Load Balancer {load_balancer_name} does not exist. Creating.")
+            logger.info(f"Load Balancer {load_balancer_name} does not exist. Creating.")
             response = elb_client.create_load_balancer(
                 Name=load_balancer_name,
                 Subnets=subnet_ids,
@@ -144,7 +151,7 @@ def make_auto_scaling_group(
             AutoScalingGroupNames=[autoscaling_group_name]
         )
         if response["AutoScalingGroups"]:
-            print(
+            logger.info(
                 f"Auto Scaling Group {autoscaling_group_name} already exists. Reusing."
             )
             return
@@ -179,10 +186,10 @@ def get_load_balancer_url(elb_client, load_balancer_name):
             load_balancer_url = f"http://{load_balancer_dns_name}:8050"  # Dash app port
             return load_balancer_url
         else:
-            print(f"Load Balancer {load_balancer_name} not found.")
+            logger.info(f"Load Balancer {load_balancer_name} not found.")
             return None
     except ClientError as e:
-        print(f"Error getting Load Balancer URL: {str(e)}")
+        logger.error(f"Error getting Load Balancer URL: {str(e)}")
         return None
 
 
@@ -212,7 +219,7 @@ def deploy_with_autoscaling(
         InstanceProfileName=instance_profile_name
     )
     instance_profile_arn = response["InstanceProfile"]["Arn"]
-    print(f"Instance profile ARN: {instance_profile_arn}")
+    logger.info(f"Instance Profile ARN: {instance_profile_arn}")
     time.sleep(30)
 
     # create launch template
@@ -227,7 +234,7 @@ def deploy_with_autoscaling(
 
     response = ec2_client.describe_subnets(SubnetIds=subnet_ids)
     vpc_id = response["Subnets"][0]["VpcId"]
-    print(f"VPC ID extracted from subnet {subnet_ids[0]}: {vpc_id}")
+    logger.info(f"VPC ID extracted from subnet {subnet_ids[0]}: {vpc_id}")
 
     target_group_arn = make_target_group(
         elb_client=elb_client,
@@ -242,20 +249,20 @@ def deploy_with_autoscaling(
         security_group_id=security_group_id,
     )
 
-    print("Load balancer created")
-    print(
+    logger.info(f"Load Balancer ARN: {load_balancer_arn}")
+    logger.info(
         "To access the dashboard after creation, use the URL: "
         f"{get_load_balancer_url(elb_client, load_balancer_name)}"
     )
 
-    print("Creating Listener for Load Balancer")
+    logger.info("Creating Listener for Load Balancer")
     elb_client.create_listener(
         LoadBalancerArn=load_balancer_arn,
         Protocol="HTTP",
         Port=8050,
         DefaultActions=[{"Type": "forward", "TargetGroupArn": target_group_arn}],
     )
-    print("Listener created and attached to Load Balancer")
+    logger.info("Listener created and attached to Load Balancer")
 
     autoscaling_group_name = "dashboard-asg"
     make_auto_scaling_group(
@@ -267,7 +274,7 @@ def deploy_with_autoscaling(
     )
 
     # Create ScaleUp policy
-    print("Creating ScaleUp policy")
+    logger.info("Creating ScaleUp policy")
     scale_up_policy = autoscaling_client.put_scaling_policy(
         AutoScalingGroupName=autoscaling_group_name,
         PolicyName=scale_up_policy_name,
@@ -278,7 +285,7 @@ def deploy_with_autoscaling(
     scale_up_policy_arn = scale_up_policy["PolicyARN"]
 
     # Create ScaleDown policy
-    print("Creating ScaleDown policy")
+    logger.info("Creating ScaleDown policy")
     scale_down_policy = autoscaling_client.put_scaling_policy(
         AutoScalingGroupName=autoscaling_group_name,
         PolicyName=scale_down_policy_name,
@@ -289,7 +296,7 @@ def deploy_with_autoscaling(
     scale_down_policy_arn = scale_down_policy["PolicyARN"]
 
     # Create CloudWatch alarms
-    print("Creating CloudWatch alarms")
+    logger.info("Creating CloudWatch alarms")
     cloudwatch_client = boto3.client("cloudwatch", region_name=DEFAULT_REGION)
     cloudwatch_client.put_metric_alarm(
         AlarmName="ScaleUpAlarm",
@@ -369,9 +376,9 @@ def delete_auto_scaling_group(autoscaling_client, group_name):
             autoscaling_client.delete_auto_scaling_group(
                 AutoScalingGroupName=group_name, ForceDelete=True
             )
-            print(f"Auto Scaling Group {group_name} deleted.")
+            logger.info(f"Auto Scaling Group {group_name} deleted.")
     except ClientError as e:
-        print(f"Error deleting Auto Scaling Group {group_name}: {str(e)}")
+        logger.info(f"Error deleting Auto Scaling Group {group_name}: {str(e)}")
 
 
 def delete_load_balancer(elb_client, load_balancer_name):
@@ -383,9 +390,9 @@ def delete_load_balancer(elb_client, load_balancer_name):
         if response["LoadBalancers"]:
             load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
             elb_client.delete_load_balancer(LoadBalancerArn=load_balancer_arn)
-            print(f"Load Balancer {load_balancer_name} deleted.")
+            logger.info(f"Load Balancer {load_balancer_name} deleted.")
     except ClientError as e:
-        print(f"Error deleting Load Balancer {load_balancer_name}: {str(e)}")
+        logger.info(f"Error deleting Load Balancer {load_balancer_name}: {str(e)}")
 
 
 def delete_target_group(elb_client, target_group_name):
@@ -397,9 +404,9 @@ def delete_target_group(elb_client, target_group_name):
         if response["TargetGroups"]:
             target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
             elb_client.delete_target_group(TargetGroupArn=target_group_arn)
-            print(f"Target Group {target_group_name} deleted.")
+            logger.info(f"Target Group {target_group_name} deleted.")
     except ClientError as e:
-        print(f"Error deleting Target Group {target_group_name}: {str(e)}")
+        logger.info(f"Error deleting Target Group {target_group_name}: {str(e)}")
 
 
 def delete_launch_template(ec2_client, launch_template_name):
@@ -413,9 +420,9 @@ def delete_launch_template(ec2_client, launch_template_name):
         if response["LaunchTemplates"]:
             launch_template_id = response["LaunchTemplates"][0]["LaunchTemplateId"]
             ec2_client.delete_launch_template(LaunchTemplateId=launch_template_id)
-            print(f"Launch Template {launch_template_name} deleted.")
+            logger.info(f"Launch Template {launch_template_name} deleted.")
     except ClientError as e:
-        print(f"Error deleting Launch Template {launch_template_name}: {str(e)}")
+        logger.info(f"Error deleting Launch Template {launch_template_name}: {str(e)}")
 
 
 def delete_resources(ec2_resource, autoscaling_client, elb_client):
