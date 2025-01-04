@@ -85,11 +85,12 @@ def summary_analysis(
     mean_of_mean_errors = df_pred_errors.mean().mean()
 
     # Make a dataframe with the 3 errors and print
-    df_errors = pd.Series(
+    ser_errors = pd.Series(
         {
             "Median of Median Errors": median_of_median_errors,
             "Mean of Median Errors": mean_of_median_errors,
             "Mean of Mean Errors": mean_of_mean_errors,
         }
     )
-    print(df_errors)
+    print(ser_errors)
+    return ser_errors
