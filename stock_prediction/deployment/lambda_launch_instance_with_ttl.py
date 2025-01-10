@@ -40,8 +40,6 @@ eval "$(pyenv virtualenv-init -)"
 
 # Navigate to the project directory
 cd /root/aws_ml_eng_project_stock_prediction
-git pull
-git checkout marcoopsampaio/model_development
 
 # run retraining script
 poetry run python ./stock_prediction/modeling/train.py
