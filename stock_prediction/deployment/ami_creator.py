@@ -39,8 +39,7 @@ xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git curl unzip
 git clone https://github.com/marcoopsampaio/aws_ml_eng_project_stock_prediction.git
 cd aws_ml_eng_project_stock_prediction/
 
-# Go to the relevant branch
-git checkout marcoopsampaio/model_development
+# Install the environment
 ./scripts/setup_environment.sh
 
 # Prepare .bashrc to source pyenv

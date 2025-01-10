@@ -8,8 +8,6 @@ import boto3
 
 from stock_prediction.deployment.utils import DEFAULT_REGION, resource_exists
 
-# TODO: Adjust Cron tabs
-
 # AWS Configuration
 LAMBDA_ROLE_NAME = "LambdaExecutionRoleForEC2"
 TTL_DURATION = 6 * 3600  # TTL in seconds (e.g., 6 hour)
@@ -143,6 +141,14 @@ def create_eventbridge_rule(lambda_arn):
         SourceArn=rule_arn,
     )
     print("EventBridge rule linked to Lambda function.")
+
+    # Manually invoke the Lambda function once after the rule is created
+    print("Manually triggering Lambda function for initial execution.")
+    lambda_client.invoke(
+        FunctionName="LaunchEC2WithTTL",
+        InvocationType="Event",  # Asynchronous invocation
+    )
+    print("Lambda function invoked for initial execution.")
 
 
 def create_cloudwatch_rule(lambda_arn):
