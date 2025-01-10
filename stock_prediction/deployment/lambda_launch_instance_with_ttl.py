@@ -19,13 +19,11 @@ with open("info.yaml", "r") as yaml_file:
     AMI_ID = info[0].split(":")[1].strip()
 INSTANCE_TYPE = "t2.micro"
 KEY_NAME = "capstone_project"
-# SECURITY_GROUP = "your-security-group-id"
-# TTL_DURATION = 3600
 SECURITY_GROUP_NAME = "custom-security-group"
 SECURITY_GROUP_DESCRIPTION = (
     "Security group for SSH access to capstone project instances"
 )
-TTL_DURATION = 3 * 60
+TTL_DURATION = 3600
 
 USER_DATA_SCRIPT = (
     f"""#!/bin/bash

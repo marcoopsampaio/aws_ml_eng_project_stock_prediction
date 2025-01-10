@@ -8,7 +8,7 @@ profile = "black"
 
 [tool.poetry]
 name = "stock_prediction"
-version = "0.1.5"
+version = "0.1.6"
 description = ""
 authors = ["Marco Sampaio <marcoopsampaio@gmail.com>"]
 readme = "README.md"

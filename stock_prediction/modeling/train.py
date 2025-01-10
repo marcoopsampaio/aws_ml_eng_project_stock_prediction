@@ -52,12 +52,11 @@ if __name__ == "__main__":
             start=last_date.strftime("%Y-%m-%d"),
             end=datetime.now().strftime("%Y-%m-%d"),
         )
-        if len(latest_prices["Adj Close"]) != 0:
+        if len(latest_prices["Close"]) != 0:
             break
 
     # Extract the 'Adj Close' prices as of the last day in the extracted returns dataset
-    last_day_close = latest_prices["Adj Close"][latest_prices.index == last_date.strftime("%Y-%m-%d")].iloc[0]  # type: ignore
-
+    last_day_close = latest_prices["Close"][latest_prices.index == last_date.strftime("%Y-%m-%d")].iloc[0]  # type: ignore
     # Clip the end of the dataframes if needed, and select only the columns we need
     df_all_symbols = df_all_symbols.iloc[: i_latest_prices + 1][last_day_close.index]
     df_all_symbols_cumulative = df_all_symbols_cumulative.iloc[: i_latest_prices + 1][
