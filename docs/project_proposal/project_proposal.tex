@@ -1,0 +1,416 @@
+\documentclass[10pt]{article}
+
+\usepackage{fullpage}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage[section]{placeins}
+\usepackage{xcolor}
+\usepackage{breakcites}
+\usepackage{lineno}
+\usepackage{hyphenat}
+
+
+
+
+
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[colorlinks = true,
+            linkcolor = blue,
+            urlcolor  = blue,
+            citecolor = blue,
+            anchorcolor = blue]{hyperref}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\@combinedblfloats{\box\@outputbox}{\unvbox\@outputbox}{}{%
+  \errmessage{\noexpand\@combinedblfloats could not be patched}%
+}%
+\makeatother
+
+
+\usepackage{natbib}
+
+
+
+
+\renewenvironment{abstract}
+  {{\bfseries\noindent{\abstractname}\par\nobreak}\footnotesize}
+  {\bigskip}
+
+\titlespacing{\section}{0pt}{*3}{*1}
+\titlespacing{\subsection}{0pt}{*2}{*0.5}
+\titlespacing{\subsubsection}{0pt}{*1.5}{0pt}
+
+
+\usepackage{authblk}
+
+
+\usepackage{graphicx}
+\usepackage[space]{grffile}
+\usepackage{latexsym}
+\usepackage{textcomp}
+\usepackage{longtable}
+\usepackage{tabulary}
+\usepackage{booktabs,array,multirow}
+\usepackage{amsfonts,amsmath,amssymb}
+\providecommand\citet{\cite}
+\providecommand\citep{\cite}
+\providecommand\citealt{\cite}
+% You can conditionalize code for latexml or normal latex using this.
+\newif\iflatexml\latexmlfalse
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}%
+
+\AtBeginDocument{\DeclareGraphicsExtensions{.pdf,.PDF,.eps,.EPS,.png,.PNG,.tif,.TIF,.jpg,.JPG,.jpeg,.JPEG}}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+
+
+\usepackage{float}
+
+
+
+
+
+
+
+
+\begin{document}
+
+\title{Project Proposal - ETF price forecaster}
+
+
+
+\author[1]{Marco Sampaio}%
+\affil[1]{Affiliation not available}%
+
+
+\vspace{-1em}
+
+
+
+
+  \date{January 11, 2025}
+
+
+\begingroup
+\let\center\flushleft
+\let\endcenter\endflushleft
+\maketitle
+\endgroup
+
+
+
+
+
+\selectlanguage{english}
+\begin{abstract}
+We propose a project to develop a machine learning model to forecast
+Exchange Trade Fund (ETF) indices. The goal of the project is not only
+to develop a forecaster with a good performance but also to deploy an
+interactive dashboard on AWS infrastructure with daily model
+retraining.~%
+\end{abstract}%
+
+
+
+\sloppy
+
+
+\hypertarget{domain-background}{%
+\section*{Domain Background}}
+
+{\label{113420}}
+
+Exchange-Traded Funds (ETFs)~\hyperref[csl:1]{[1]}; \hyperref[csl:2]{[2]} are investment
+instruments consisting of a basket of securities--- such as stocks,
+bonds, or commodities---designed to track the performance of a specific
+index, sector, or asset class. ETFs are traded on stock exchanges,
+allowing investors to buy and sell shares throughout the day at market
+prices.~
+
+ETFs are an excellent tool for individuals to manage long-term savings
+due to their ability to provide diversified exposure to various asset
+classes at a low cost \hyperref[csl:3]{[3]}. By investing in ETFs that
+track broad market indices, such as the S\&P 500, individuals can
+achieve consistent growth over time, benefiting from market trends and
+compounding returns at low management fees and tax efficiency, making
+them a popular choice for retirement planning and other financial goals.
+
+\hypertarget{problem-statement}{%
+\section*{Problem Statement}}
+
+{\label{942564}}
+
+In this project, we propose to develop an interactive dashboard that
+shows the evolution of a selection of long term high performing ETF
+indices, together with Machine Learning (ML) model based forecasts (in a
+relatively short time window e.g., 1 month). We have in mind the use
+case of an individual who:
+
+\begin{itemize}
+\tightlist
+\item
+  has some idea on the domains they want to invest in (e.g., they may be
+  thinking about keeping half their savings in an index that tracks the
+  overall market, like S\&P 500, and distribute the remainder in the
+  tech sector, robotics, health, etc.);
+\item
+  is interested in regularly investing their savings in such funds
+  (e.g., several times a year);
+\item
+  wants to decide the best time during a period (e.g., one month) to
+  buy, if they are investing, or sell, if they are withdrawing their
+  funds to use them.
+\end{itemize}
+
+Thus, overall, such an individual is not interested in having a real
+time forecast of what's happening to the market throughout the day, but
+it is interested in the overall trend in a window of a couple of week to
+make an informed decision on how low they should set their buying price,
+or how high their selling price so that their order gets executed within
+the time frame they have set while not executing it at a very
+unfavorable market fluctuation.
+
+More specifically, the problem can be stated as follows. Given a
+historical time series dataset of with a set of closing
+prices~\(\left\{x_{i,t}\right\}\) for the ETF index~\(i\) on
+business day~\(t\) we want to predict the future
+prices~\(\left\{\hat{x}_{i, t}\right\}\) for all the indices.~
+
+\hypertarget{datasets-inputs-and-solution-statement}{%
+\section*{Datasets,~ Inputs and Solution
+Statement}}
+
+{\label{273725}}
+
+Currently there is a wide array of free data resources to obtain time
+series data for finance. Yahoo finance, in particular, is a widely used
+source.~ We aim to leverage the following two data sources:
+
+\begin{itemize}
+\tightlist
+\item
+  A publicly available Kaggle dataset~\hyperref[csl:4]{[4]} that has been
+  scrapped from yahoo finance from thousands of ETF symbols in the US.
+  This will be useful for exploratory data analysis and allow to start
+  iterating ideas fast.
+\item
+  the yfinance python libary~\hyperref[csl:5]{[5]} allows to download up to
+  date Yahoo finance data. This will allow us to get price data on a
+  daily basis in order to be able to retrain models periodically.~
+\end{itemize}
+
+The quantity we will be interested in forecasting is the closing price
+on each day, which is available in either of these data sources.
+
+To solve this problem and predict the target outputs, the input of the
+model can be in many forms depending on the model used, namely:
+
+\begin{itemize}
+\tightlist
+\item
+  Previous values of the time series before the prediction
+  time~\(t\);~
+\item
+  Manually engineered features~ based on the past series values (e.g.,
+  via rolling window statistics);
+\item
+  Features extracted from the date (e.g., week day, month, etc.);
+\item
+  etc.
+\end{itemize}
+
+Which such types of inputs are used depends largely on the type of model
+used.~
+
+\hypertarget{benchmark-model}{%
+\section*{Benchmark Model}}
+
+{\label{145318}}
+
+The simplest benchmark models that can be defined in the context of time
+series prediction are:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Predict no change in price:}~Since market prices fluctuate up
+  and down the overall mean tends to drift slowly, so we expect this to
+  be good reference baseline (if we do worse than such a simple model
+  then we have a clear red flag).
+\item
+  \textbf{Predict based on a long term average return rate:~}In our use
+  case, the investor is mostly interested in the overall trend to ensure
+  they invest at a favorable time. The return rate computed, e.g., on a
+  few weeks or a few months is typically a good indication of the trend
+  of the evolution of the prices so it is expected to provide a decent
+  baseline.~
+\end{itemize}
+
+\hypertarget{evaluation-metrics}{%
+\section*{Evaluation Metrics}}
+
+{\label{323921}}
+
+We propose two types of metrics to evaluate the models:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Loss for training:} In regression problems, the typical metric
+  is root mean squared error~\hyperref[csl:6]{[6]}, which is the average of
+  the squared residuals of the prediction at each step of the time
+  series. Out of the box models in standard libraries for regression
+  typically use this as the default loss for fitting.
+\item
+  \textbf{Model evaluation} (validation and test set): To evaluate the
+  quality of the forecasts we propose to focus on Median Absolute
+  Percentage Error (MedianAPE) for each series - defined as the Median
+  of the absolute residuals. This will be used in validation to select~
+  the best model hyperparameters.~ We choose the median because it is
+  less sensitive to outlier differences, which are common to happen in
+  finance due to isolated unusual market events, that deviate a lot from
+  the mean behavior and are very unpredictable (so we do not aim to be
+  able to predict them).~
+\end{itemize}
+
+\hypertarget{project-design}{%
+\section*{Project Design}}
+
+{\label{381510}}
+
+To execute the project we will adopt the stages described in the next
+sections
+
+\hypertarget{exploratory-data-analysis-data-preparation-and-cleaning}{%
+\subsection*{Exploratory data analysis, data preparation and
+cleaning}}
+
+{\label{771372}}
+
+In this stage we will answer the following questions:
+
+\begin{itemize}
+\tightlist
+\item
+  Which ETFs do we want to focus on? Is the data clean and complete?
+\item
+  How do the time series look like? Should we model the price directly?
+  Or the daily returns?
+\item
+  Are there any trends, seasonality, time correlation etc. to take into
+  account and that we can exploit in modeling?
+\end{itemize}
+
+\hypertarget{model-development-evaluation}{%
+\subsection*{Model development \&
+evaluation}}
+
+{\label{177371}}
+
+The next step will be to develop and evaluate models based on historical
+data. We will split the data temporally in train, validation and test.
+The test set will be held out for final evaluation of only a few short
+listed models whereas the validation set will be used to select the
+hyper-parameters of each type of model. In principle we can explore
+various types of modelling approaches:
+
+\begin{itemize}
+\tightlist
+\item
+  ARIMA models~\hyperref[csl:7]{[7]}: These are classic time series models
+  that include autoregressive terms (linearly regressing on previous
+  series values), moving average terms (linearly regressing on residual
+  errors) and time series differencing.
+\item
+  Feature based non-linear ML models: This simply consists of taking an
+  out of the box model such as a gradient boosting decision trees
+  model~\hyperref[csl:8]{[8]} and feed it various features that describe
+  the history of the time series (statistics, series values etc.) to
+  learn non-linear dependencies.
+\item
+  Non-linear autoregressive~ neural network models~\hyperref[csl:9]{[9]}:
+  RNN models such as LSTMs provide another approach to modeling time
+  series non-linearities which does not require explicit feature
+  engineering. These are typically more difficult to train though.
+\end{itemize}
+
+\hypertarget{dashboard-app-development-deployment}{%
+\subsection*{Dashboard app development \&
+deployment}}
+
+{\label{177371}}
+
+The last step of the project will consist of developing a code framework
+to manage the deployment of the interactive dashboard app. We aim to
+automate all steps of the process so that:
+
+\begin{itemize}
+\tightlist
+\item
+  The model is retrained daily to produce up to date forecasts without
+  any manual intervention
+\item
+  The dashboard app is deployed in an auto scaling group and available
+  at a public URL and allows for a user to select the ETFs they want to
+  visualize. The Dashboard will allow for the user to clearly see the
+  forecasts and the historical data and it will allow them to zoom
+  specific data periods and consult the specific values of prices at
+  specific dates.
+\end{itemize}
+
+Below we present two diagrams of what we envision for these two
+components and how they should interact:\selectlanguage{english}
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=1.00\columnwidth]{figures/Solution-Architecture/Solution-Architecture}
+\caption{{Early concept for the deployment Architecture
+{\label{582012}}%
+}}
+\end{center}
+\end{figure}\selectlanguage{english}
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.49\columnwidth]{figures/Dashboard-mockup/Dashboard-mockup}
+\caption{{Early concept for the structure of the dashboard
+{\label{140820}}%
+}}
+\end{center}
+\end{figure}
+
+\selectlanguage{english}
+\FloatBarrier
+\section*{References}\sloppy
+\phantomsection
+\label{csl:1}[1]``{Exchange-Traded Fund (ETF): How to Invest and What It Is}''. \url{https://www.investopedia.com/terms/e/etf.asp.}
+
+\phantomsection
+\label{csl:2}[2]``{Exchange-traded fund - Wikipedia}''. \url{https://en.wikipedia.org/wiki/Exchange-traded_fund.}
+
+\phantomsection
+\label{csl:3}[3]``{What are exchange traded funds (ETFs)? | Vanguard}''. \url{https://investor.vanguard.com/investor-resources-education/etfs/what-is-an-etf.}
+
+\phantomsection
+\label{csl:4}[4]``{US Funds dataset from Yahoo Finance}''. \url{https://www.kaggle.com/datasets/stefanoleone992/mutual-funds-and-etfs.}
+
+\phantomsection
+\label{csl:5}[5]``{yfinance}''. \url{https://pypi.org/project/yfinance/.}
+
+\phantomsection
+\label{csl:6}[6]``{root_mean_squared_error}''. \url{https://scikit-learn.org/stable/modules/generated/sklearn.metrics.root_mean_squared_error.html.}
+
+\phantomsection
+\label{csl:7}[7]``{Autoregressive integrated moving average - Wikipedia}''. \url{https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average.}
+
+\phantomsection
+\label{csl:8}[8]``{lightgbm.LGBMRegressor — LightGBM 4.5.0.99 documentation}''. \url{https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html.}
+
+\phantomsection
+\label{csl:9}[9]``{Recurrent neural network - Wikipedia}''. \url{https://en.wikipedia.org/wiki/Recurrent_neural_network.}
+
+\phantomsection
+\label{csl:0}[10]``{Exchange-traded fund – Wikipédia, a enciclopédia livre}''. \url{https://pt.wikipedia.org/wiki/Exchange-traded_fund.}
+
+\end{document}
