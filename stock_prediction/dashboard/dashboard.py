@@ -96,7 +96,13 @@ app.layout = html.Div(
             [
                 html.P(
                     [
-                        "TODO: Description of what this dashboard is about,  how the model was built and how to use it",
+                        "This is a simple dashboard to forecast the future price of selected ETFs. ",
+                        "A simple LightGBM model per available ETF was trained using data from ",
+                        html.A(
+                            "Yahoo Finance",
+                            href="https://finance.yahoo.com/",
+                            target="_blank",
+                        ),
                         "The code can be found in this ",
                         html.A("gitlab repo", href=GIT_REPO, target="_blank"),
                         ".",

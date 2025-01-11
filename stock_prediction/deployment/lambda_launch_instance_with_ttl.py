@@ -17,7 +17,7 @@ from utils import (
 with open("info.yaml", "r") as yaml_file:
     info = yaml_file.readlines()
     AMI_ID = info[0].split(":")[1].strip()
-INSTANCE_TYPE = "t2.micro"
+INSTANCE_TYPE = "t2.small"
 KEY_NAME = "capstone_project"
 SECURITY_GROUP_NAME = "custom-security-group"
 SECURITY_GROUP_DESCRIPTION = (

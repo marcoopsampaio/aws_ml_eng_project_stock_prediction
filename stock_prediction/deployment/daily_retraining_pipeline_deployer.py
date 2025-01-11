@@ -116,8 +116,8 @@ def create_eventbridge_rule(lambda_arn):
 
     response = events_client.put_rule(
         Name="DailyEC2LaunchRule",
-        # ScheduleExpression="cron(0 * * * ? *)",  # Daily at midnight UTC
-        ScheduleExpression="cron(* * * * ? *)",  # Every minute
+        ScheduleExpression="cron(0 0 * * ? *)",  # Daily at midnight UTC
+        # ScheduleExpression="cron(* * * * ? *)",  # Every minute
         State="ENABLED",
     )
     rule_arn = response["RuleArn"]
@@ -160,9 +160,8 @@ def create_cloudwatch_rule(lambda_arn):
 
     response = events_client.put_rule(
         Name="EC2ExpirationCheckRule",
-        # ScheduleExpression="cron(0 * * * ? *)",  # Every hour at the top of the hour
-        # Every minute
-        ScheduleExpression="cron(*/10 * * * ? *)",
+        ScheduleExpression="cron(0 * * * ? *)",  # Every hour at the top of the hour
+        # ScheduleExpression="cron(*/10 * * * ? *)",
         State="ENABLED",
     )
     rule_arn = response["RuleArn"]
