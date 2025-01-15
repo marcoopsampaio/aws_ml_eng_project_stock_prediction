@@ -103,8 +103,8 @@ app.layout = html.Div(
                             href="https://finance.yahoo.com/",
                             target="_blank",
                         ),
-                        "The code can be found in this ",
-                        html.A("gitlab repo", href=GIT_REPO, target="_blank"),
+                        ". The code can be found in this ",
+                        html.A("github repo", href=GIT_REPO, target="_blank"),
                         ".",
                     ]
                 ),
