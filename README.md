@@ -1,7 +1,6 @@
-# AWS ML engineering Capstone Project - Stock Prediction
+# AWS ML engineering Capstone Project - ETF price forecasts
 
-
-### Setup Environment
+## Setup Environment
 
  Install the environment
 ```bash
@@ -13,8 +12,6 @@ Activate the environment
 poetry shell
 ```
 
-## How to reproduce this work
+## Overview of the repo
 
-### Step 1: Data Exploration
-
-### Step 2: Preprocessing
+This repo was developed for the work required to complete the Udacity "AWS ML engineering Capstone Project". The best walk through of the repo is the final report of the project which can be found at :::::::::::::::::::::::::::::::: TODO ::::::::::::::::
