@@ -22,9 +22,7 @@
             anchorcolor = blue]{hyperref}
 \usepackage{etoolbox}
 \makeatletter
-\patchcmd\@combinedblfloats{\box\@outputbox}{\unvbox\@outputbox}{}{%
-  \errmessage{\noexpand\@combinedblfloats could not be patched}%
-}%
+
 \makeatother
 
 
@@ -195,19 +193,19 @@ prices~\(\left\{\hat{x}_{i, t}\right\}\) for all the indices.~~
 {\label{686593}}
 
 This report is split in 4 main parts. In
-section~{\textbackslash ref\{162904\}} we provide a data exploration
+section~{\ref{162904}} we provide a data exploration
 which serves two purposes: i) we select a short list of 100 symbols to
 work with while describing the type of investor we are focusing one, and
 ii) we explore the properties of the time series to build intuition on
 what should be relevant for modeling. In
-section~{\textbackslash ref\{158856\}} we present the types of models we
+section~{\ref{158856}} we present the types of models we
 will train as well as the evaluation metrics.
-Section~{\textbackslash ref\{106179\}} consists of the main results
+Section~{\ref{106179}} consists of the main results
 regarding model development, where we conclude on the final model
-parameters. Finally, in section~{\textbackslash ref\{615612\}} we
+parameters. Finally, in section~{\ref{615612}} we
 describe the engineering of the components needed for the final
 deployment in AWS. Our conclusions are summarized in section
-{\textbackslash ref\{370266\}}.~~
+{\ref{370266}}.~~
 
 \hypertarget{data-exploration}{%
 \section{Data Exploration}}
@@ -243,7 +241,7 @@ with the details of this analysis is found in the repo
 at~\href{https://github.com/marcoopsampaio/aws_ml_eng_project_stock_prediction/blob/main/experiments/data_exploration/etfs_selection.ipynb}{experiments/data\_exploration/etfs\_selection.ipynb}.~
 ~\href{https://github.com/marcoopsampaio/aws_ml_eng_project_stock_prediction/blob/main/experiments/data_exploration/etfs_selection.ipynb}{experiments/data\_exploration/etfs\_selection.ipynb}.~
 
-In figure~{\textbackslash ref\{488391\}} we show a summary table of the
+In figure~{\ref{488391}} we show a summary table of the
 symbols with the highest annualized returns over 10 years. We also
 display their 10 year annualized volatility (stdev\_10y) average daily
 volume over 3 months and 10 year sharpe ratio.~ We only show the top
@@ -284,7 +282,7 @@ selects a few symbols to have in their protfolio.
 long term investment (\textgreater{} 10 years) and is risk averse. They
 want to select the symbols with large returns, large sharpe ratio and
 that are main stream (large average daily volume). In
-figure~{\textbackslash ref\{892879\}} we show the selection they get
+figure~{\ref{892879}} we show the selection they get
 when applying these criteria.~
 
 \hypertarget{section}{%
@@ -304,7 +302,7 @@ SPY)
 shorter term term investment (\textasciitilde{} 5years) and can take up
 a little more risk, while still wanting to select the symbols with large
 returns, large sharpe ratio and that are main stream (large average
-daily volume). In figure~{\textbackslash ref\{932441\}} we show the
+daily volume). In figure~{\ref{932441}} we show the
 selection they get when applying these criteria.\selectlanguage{english}
 \begin{figure}[H]
 \begin{center}
@@ -322,7 +320,7 @@ return and risk appear in addition to those in scenario 1.
 
 In the remainder of this report, we choose the top 100 symbols with
 highest 10 year returns (i.e., obtained by extending the table of
-figure~{\textbackslash ref\{488391\}} with a few more symbols below
+figure~{\ref{488391}} with a few more symbols below
 SPY).~~
 
 \hypertarget{exploratory-time-series-data-analysis}{%
@@ -341,7 +339,7 @@ to cleanup and select the data for modeling.~ The notebook with the full
 analysis is found at
 \href{https://github.com/marcoopsampaio/aws_ml_eng_project_stock_prediction/blob/main/experiments/data_exploration/data_understanding_and_cleaning.ipynb}{experiments/data\_exploration/data\_understanding\_and\_cleaning.ipynb}.
 
-In figure~{\textbackslash ref\{980651\}} we start by observing the
+In figure~{\ref{980651}} we start by observing the
 distribution of first timestamps for each of the 100 selected symbols.\selectlanguage{english}
 \begin{figure}[H]
 \begin{center}
@@ -371,8 +369,8 @@ Furthermore, the daily returns are not sensitive to stock splitting
 from one day to the other), which removes the extra complication of
 having to adjust for those events.~
 
-In figures~{\textbackslash ref\{578995\}}
-and~{\textbackslash ref\{257303\}} we show, respectively, the
+In figures~{\ref{578995}}
+and~{\ref{257303}} we show, respectively, the
 distributions of the mean daily return and the standard deviation over
 all symbols for our dataset. ~\selectlanguage{english}
 \begin{figure}[H]
@@ -408,7 +406,7 @@ how much is already useful to make a decision.
 
 Next, we investigate how the 100 symbols relate to each other by
 observing a heatmap for the correlation matrix between any 2 symbols in
-figure~{\textbackslash ref\{293994\}} (we sort the symbols by
+figure~{\ref{293994}} (we sort the symbols by
 correlation value with SPY).~\selectlanguage{english}
 \begin{figure}[H]
 \begin{center}
@@ -442,7 +440,7 @@ symbols
 \end{figure}
 
 In the following figures we now look more carefully at properties of
-each series. In figure~{\textbackslash ref\{273127\}} we show a the
+each series. In figure~{\ref{273127}} we show a the
 evolution of the cumulative daily returns, which is proportional to the
 real price.\selectlanguage{english}
 \begin{figure}[H]
@@ -454,7 +452,7 @@ real price.\selectlanguage{english}
 \end{center}
 \end{figure}
 
-In figure~{\textbackslash ref\{258382\}} left panel we can compare it
+In figure~{\ref{258382}} left panel we can compare it
 with the daily returns series. By comparing the two, we clearly see that
 by working with daily returns we remove a clear trend. Furthermore, we
 see that the daily returns fluctuate heavily around a small positive
@@ -469,7 +467,7 @@ analysis (right).
 \end{center}
 \end{figure}
 
-In figure~{\textbackslash ref\{258382\}}~right panel, we observe and
+In figure~{\ref{258382}}~right panel, we observe and
 example of the auto-correlation function~ (ACF) and the partial
 auto-correlation functions (pACF) for SPY. These functions encode
 information on how patterns in the fluctuations of the series~ repeat
@@ -480,8 +478,8 @@ range from 1 day to 252 (the approximate number of trading days in one
 year). The 95\% confidence level band helps us understand if the value
 of the correlation function is significantly away from zero.~
 
-In figures~{\textbackslash ref\{695023\}}
-and~{\textbackslash ref\{769583\}} we plot the distribution of all lags
+In figures~{\ref{695023}}
+and~{\ref{769583}} we plot the distribution of all lags
 with non-zero correlation (i.e., outside the 95\% confidence level band)
 over all symbols for the pACF and ACF respectively.\selectlanguage{english}
 \begin{figure}[H]
@@ -514,7 +512,7 @@ frequencies.
 
 Another measure of the oscillation periods~ of a signal is given by the
 Fourier spectrum, which decomposes a signal in sine and cosine signals
-of all frequencies (see figure~{\textbackslash ref\{392293\}}). We see
+of all frequencies (see figure~{\ref{392293}}). We see
 that the amplitude of the spectrum has the highest peaks up to about 20
 or 30 days, with a heavy tail beyond that.\selectlanguage{english}
 \begin{figure}[H]
@@ -529,7 +527,7 @@ or 30 days, with a heavy tail beyond that.\selectlanguage{english}
 To finish this section, we look into a very simple statistic that will
 both motivate the features we will design for model building as well as
 a simple baseline that we will use to compare our models against. In
-figure~{\textbackslash ref\{957318\}} we show the SPY price series
+figure~{\ref{957318}} we show the SPY price series
 against a prediction with a shift~\(\delta t\) = 1, 5, 10, 20 and
 40 days ahead, obtained given by compounding,~at each
 time~\(t\), the average daily return computed with the 20
@@ -804,7 +802,7 @@ days, for the rolling average baseline
 The main conclusion is that the best rolling window is actually quite
 large, 400 days, corresponding to about 1.5 years.~
 
-In figure~{\textbackslash ref\{176774\}} we display the results for the
+In figure~{\ref{176774}} we display the results for the
 ARIMA models for a sweep over 16 configurations of hyperparameters.~\selectlanguage{english}
 \begin{figure}[H]
 \begin{center}
@@ -822,7 +820,7 @@ terms with similar performance. The main conclusion seems to be that not
 including moving average terms should not be done, since the performance
 degrades considerably in those cases.~~
 
-In figure~{\textbackslash ref\{728131\}} we display the results for
+In figure~{\ref{728131}} we display the results for
 LightGBM with various hyperparameter configurations. We chose to vary
 the maximum depth of each base tree learner as a way to control the
 level of regularization~ (-1 for unbounded) and the learning rate to
@@ -846,7 +844,7 @@ median error and mean errors (i.e., reducing the other metrics that are
 sensitive to outliers). Note, however, that the differences between the
 best model and the alternatives are not large.~
 
-In figure~{\textbackslash ref\{343251\}} we show a table summarizing the
+In figure~{\ref{343251}} we show a table summarizing the
 performance of the best models for each model type where we also compare
 with the simplest baseline where we freeze the daily return rate.
 
@@ -919,7 +917,7 @@ In figure~{\ref{178032}} we provide a high level
 diagram of the architecture we developed for the deployment\selectlanguage{english}
 \begin{figure}[H]
 \begin{center}
-\includegraphics[width=0.98\columnwidth]{figures/Solution-Architecture---refined/Solution-Architecture---refined}
+\includegraphics[width=0.98\columnwidth]{figures/arch/arch}
 \caption{{Overall deployment architecture
 {\label{178032}}%
 }}
@@ -949,7 +947,7 @@ having to serve the model in real time. Thus:
   for the user to clearly see the forecasts and the historical data,~
   zoom specific data periods and consult the specific values of prices
   at specific dates in a table. An example of the final deployed
-  dashboard~ can be seen in figure~{\textbackslash ref\{445301\}}. The
+  dashboard~ can be seen in figure~{\ref{445301}}. The
   live dashboard will remain active during the assessment of this
   project
   at~\url{http://dashboard-lb-1124043407.us-east-1.elb.amazonaws.com:8050}~(if
