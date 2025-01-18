@@ -8,7 +8,7 @@ iam_client = boto3.client("iam")
 
 S3_ACCESS_ROLE_NAME = "EC2S3AccessRole"
 S3_ACCESS_POLICY_NAME = "EC2S3AccessPolicy"
-BUCKET_NAME = "capstone-project-bucket-mops"
+BUCKET_NAME = "capstone-project-bucket-mops-final"
 PREDICTIONS_FILE_NAME = "predictions.feather"
 DEFAULT_REGION = "us-east-1"
 
