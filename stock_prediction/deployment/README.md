@@ -1,6 +1,12 @@
 # How to use the deployment scripts
 
-TODO: overview of the 3 mains steps in the deployment corresponding to the sections below
+In this directory we provide scripts to perform a full deployment of the dashboard. The process involves the following steps:
+1. Create a custom AMI containing all dependencies including this repo installed, to be used for all instances we launch for different purposes.
+2. Create resources for automated model retraining. This includes setting up triggers to launch an instance for retraining using, managing the associated IAM and a trigger to delete shutdown instances. This is achieved by using EventBridge rules and AWS Lambda functions.
+3. Deploy the dashboard for serving using an Auto scaling group to launch more or less instances according to the load of requests.
+
+After the dashboard is live, to shut everything down and eliminate all resources, please follow the "cleanup" instructions in the following section in reversed order (i.e., make sure that all resources of each step are properly deleted before deleting the previous step).
+
 
 ## `ami_creator.py`
 
